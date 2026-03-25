@@ -25,7 +25,7 @@ function Music({ musicas, onAdd, onSelect, onRemove, musicaAtiva, onClearAll }: 
     // TUDO que for visual precisa estar dentro deste return
     return (
         <div>
-            <h1  style={{textAlign: 'center'}}>Minhas Músicas</h1>
+            <h1 style={{ textAlign: 'center' }}>Minhas Músicas</h1>
 
             <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', justifyContent: 'center' }}>
                 <button
@@ -41,19 +41,20 @@ function Music({ musicas, onAdd, onSelect, onRemove, musicaAtiva, onClearAll }: 
                     ➕ Adicionar à Playlist
                 </button>
                 {musicas.length > 0 && (
-                        <button
-                            onClick={onClearAll}
-                            style={{ padding: '10px', background: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-                        >
-                            🗑️ Limpar Biblioteca
-                        </button>
-                    )}
+                    <button
+                        onClick={onClearAll}
+                        style={{ padding: '10px', background: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                    >
+                        🗑️ Limpar Biblioteca
+                    </button>
+                )}
             </div>
 
             {/* Lógica Condicional: Vazio vs Lista */}
             {musicas.length === 0 ? (
                 <div style={{
-                    marginTop: '40px',
+                    maxWidth: '500px',
+                    margin: '40px auto 0 auto', // 40px no topo e 'auto' nas laterais para centralizar
                     padding: '40px',
                     textAlign: 'center',
                     border: '2px dashed #333',
@@ -62,8 +63,8 @@ function Music({ musicas, onAdd, onSelect, onRemove, musicaAtiva, onClearAll }: 
                 }}>
                     <span style={{ fontSize: '48px', display: 'block', marginBottom: '10px' }}>🎧</span>
                     <h2 style={{ color: 'var(--primary-gold)' }}>Sua biblioteca está vazia</h2>
-                    <p>Clique em <strong>Abrir Nova Playlist</strong> para carregar seus arquivos MP3.</p>
-                    <p style={{ fontSize: '12px' }}>Os arquivos ficam salvos apenas no seu navegador.</p>
+                    <p>Clique em <strong>Abrir Nova Playlist</strong> para carregar suas músicas.</p>
+                    <p style={{ fontSize: '12px' }}>A playlist carregada é armazenada apenas no seu navegador.</p>
                 </div>
             ) : (
                 <ul style={{ listStyle: 'none', padding: 0, marginTop: '20px' }}>
