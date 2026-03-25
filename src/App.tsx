@@ -1,8 +1,8 @@
-import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom'
-import { useState, useRef, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom'
+import { buscarTodosDoDB, deletarDoDB, salvarNoDB } from './db'
 import Music from './pages/Music'
 import Video from './pages/Video'
-import { salvarNoDB, buscarTodosDoDB, deletarDoDB } from './db'
 
 export interface MediaFile {
   name: string
@@ -55,10 +55,10 @@ function App() {
     const novasTemp: MediaFile[] = [];
     for (const file of files) {
       await salvarNoDB(file.name, file);
-      novasTemp.push({ 
-        name: file.name, 
-        url: URL.createObjectURL(file), 
-        type: file.type.includes('audio') ? 'audio' : 'video' as any 
+      novasTemp.push({
+        name: file.name,
+        url: URL.createObjectURL(file),
+        type: file.type.includes('audio') ? 'audio' : 'video' as any
       });
     }
 
@@ -66,32 +66,66 @@ function App() {
     else setVideos(p => limparAnterior ? novasTemp : [...p, ...novasTemp]);
   };
 
+  const excluirTudo = async (tipo: 'audio' | 'video') => {
+    const confirmacao = window.confirm(`Tem certeza que deseja excluir todos os ${tipo === 'audio' ? 'áudios' : 'vídeos'}?`);
+    if (!confirmacao) return;
+
+    const todos = await buscarTodosDoDB();
+    for (const item of todos) {
+      const ehAudio = item.blob.type.includes('audio');
+      if ((tipo === 'audio' && ehAudio) || (tipo === 'video' && !ehAudio)) {
+        await deletarDoDB(item.name);
+      }
+    }
+
+    if (tipo === 'audio') {
+      setMusicas([]);
+      setMusicaAtual(null);
+    } else {
+      setVideos([]);
+      setVideoAtual(null);
+    }
+  };
+
+
   return (
     <BrowserRouter>
       <nav style={{ padding: '15px', background: '#1a1a1a', display: 'flex', gap: '20px' }}>
-        <NavLink to="/music" style={({isActive}) => ({ color: isActive ? '#4CAF50' : 'white', textDecoration: 'none' })}>MÚSICA</NavLink>
-        <NavLink to="/video" style={({isActive}) => ({ color: isActive ? '#4CAF50' : 'white', textDecoration: 'none' })}>VÍDEO</NavLink>
+        <NavLink to="/music" style={({ isActive }) => ({ color: isActive ? '#4CAF50' : 'white', textDecoration: 'none' })}>MÚSICA</NavLink>
+        <NavLink to="/video" style={({ isActive }) => ({ color: isActive ? '#4CAF50' : 'white', textDecoration: 'none' })}>VÍDEO</NavLink>
       </nav>
 
       <main style={{ padding: '20px', paddingBottom: '120px' }}>
         <Routes>
-          <Route path="/music" element={
-            <Music 
-              musicas={musicas} 
-              onAdd={(f, limpar) => adicionarMedia(f, limpar, 'audio')} 
-              onSelect={(m) => { setVideoAtual(null); setMusicaAtual(m); }} 
+          <Route path="/" element={
+            <Music
+              musicas={musicas}
+              onAdd={(f, limpar) => adicionarMedia(f, limpar, 'audio')}
+              onSelect={(m) => { setVideoAtual(null); setMusicaAtual(m); }}
               onRemove={async (n) => { await deletarDoDB(n); setMusicas(p => p.filter(x => x.name !== n)); }}
-              musicaAtiva={musicaAtual} 
+              musicaAtiva={musicaAtual}
+              onClearAll={() => excluirTudo('audio')}
+            />
+          } />
+          <Route path="/music" element={
+            <Music
+              musicas={musicas}
+              onAdd={(f, limpar) => adicionarMedia(f, limpar, 'audio')}
+              onSelect={(m) => { setVideoAtual(null); setMusicaAtual(m); }}
+              onRemove={async (n) => { await deletarDoDB(n); setMusicas(p => p.filter(x => x.name !== n)); }}
+              musicaAtiva={musicaAtual}
+              onClearAll={() => excluirTudo('audio')}
             />
           } />
           <Route path="/video" element={
-            <Video 
-              videos={videos} 
-              onAdd={(f, limpar) => adicionarMedia(f, limpar, 'video')} 
-              onSelect={(v) => { if(audioRef.current) audioRef.current.pause(); setVideoAtual(v); }} 
+            <Video
+              videos={videos}
+              onAdd={(f, limpar) => adicionarMedia(f, limpar, 'video')}
+              onSelect={(v) => { if (audioRef.current) audioRef.current.pause(); setVideoAtual(v); }}
               onRemove={async (n) => { await deletarDoDB(n); setVideos(p => p.filter(x => x.name !== n)); }}
               videoAtivo={videoAtual}
               onEnded={() => setVideoAtual(null)}
+              onClearAll={() => excluirTudo('video')}
             />
           } />
         </Routes>

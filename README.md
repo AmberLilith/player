@@ -1,73 +1,53 @@
-# React + TypeScript + Vite
+My Personal Media Player (PWA)
+Um player de mídia moderno, focado em privacidade e performance, que funciona totalmente offline. Este projeto foi desenvolvido para permitir que o usuário gerencie sua própria biblioteca de músicas e vídeos sem depender de serviços de nuvem, armazenando tudo localmente no navegador.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+🚀 Funcionalidades
+Instalação PWA: Transforme o site em um aplicativo nativo no Windows, Android ou iOS.
 
-Currently, two official plugins are available:
+Armazenamento Local (IndexedDB): Os arquivos de mídia (MP3, MP4, etc.) são salvos no banco de dados do navegador, garantindo que não precisem ser baixados novamente.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Modo Offline: Ouça suas músicas e veja seus vídeos mesmo sem conexão com a internet.
 
-## React Compiler
+Persistência de Estado: O app lembra exatamente onde você parou na última música ou vídeo.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Interface Premium Dark: Design sofisticado em tons de Preto, Dourado e Azul Neon.
 
-## Expanding the ESLint configuration
+Gerenciamento de Playlists: Opções para "Abrir Nova Playlist" (limpa o banco) ou "Adicionar à Playlist" existente.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+🛠️ Tecnologias Utilizadas
+React + TypeScript: Interface reativa e tipagem estática para maior segurança.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Vite: Tooling ultra-rápido para desenvolvimento e build.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+IndexedDB (Dexie.js): Gerenciamento de armazenamento binário no cliente.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Service Workers: Cache de ativos e suporte a Progressive Web App.
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+React Router: Navegação entre as áreas de Música e Vídeo.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+📦 Como rodar o projeto
+Clone o repositório:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Bash
+git clone https://github.com/seu-usuario/my-player-pwa.git
+cd my-player-pwa
+Instale as dependências:
+
+Bash
+npm install
+Rode em modo de desenvolvimento:
+
+Bash
+npm run dev
+Para testar a experiência PWA (Produção):
+
+Bash
+npm run build
+npx serve -s dist
+📐 Arquitetura de Dados
+Diferente de players comuns que usam apenas URLs temporárias, este projeto utiliza o IndexedDB para persistir arquivos binários (Blobs).
+
+Isso permite que, ao fechar e abrir o navegador, o aplicativo recupere os arquivos do disco local instantaneamente, simulando o comportamento de um software desktop tradicional.
+
+Dica para o seu GitHub:
+Se quiser deixar o repositório ainda mais "matador", tire um print do player rodando (com o tema Dark e as músicas listadas) e coloque uma seção de "Screenshots" no começo do README.
