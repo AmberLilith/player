@@ -89,3 +89,9 @@ span {
   text-overflow: ellipsis;
   margin-right: 10px;
 }
+
+ul {
+  max-width: 600px; /* Largura máxima confortável */
+  margin: 0 auto;   /* Centraliza a lista na tela */
+  padding: 20px;
+}
