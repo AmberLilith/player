@@ -3,6 +3,7 @@ import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom'
 import { buscarTodosDoDB, deletarDoDB, salvarNoDB } from './db'
 import Music from './pages/Music'
 import Video from './pages/Video'
+import IconComponent from './components/icons'
 
 export interface MediaFile {
   name: string
@@ -16,6 +17,7 @@ function App() {
   const [musicaAtual, setMusicaAtual] = useState<MediaFile | null>(null)
   const [videoAtual, setVideoAtual] = useState<MediaFile | null>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
+  const [repetir, setRepetir] = useState(false);
 
   useEffect(() => {
     const carregar = async () => {
@@ -87,6 +89,47 @@ function App() {
     }
   };
 
+  const tocarProximaMusica = () => {
+    if (!musicaAtual) return;
+    const index = musicas.findIndex(m => m.name === musicaAtual.name);
+    if (index !== -1 && index < musicas.length - 1) {
+      setMusicaAtual(musicas[index + 1]);
+    } else {
+      // Opcional: Volta para a primeira se quiser "Loop da Playlist"
+      setMusicaAtual(musicas[0]);
+    }
+  };
+
+  const tocarProximoVideo = () => {
+    if (!videoAtual) return;
+    const index = videos.findIndex(v => v.name === videoAtual.name);
+    if (index !== -1 && index < videos.length - 1) {
+      setVideoAtual(videos[index + 1]);
+    }
+    // Se não quiser que o player suma no último vídeo, apenas não dê o setVideoAtual(null)
+  };
+
+  const lidarComFimDaMusica = () => {
+  const indexAtual = musicas.findIndex(m => m.name === musicaAtual?.name);
+  const ehUltimaMusica = indexAtual === musicas.length - 1;
+
+  if (repetir) {
+    // Se for a última e o repetir estiver ligado, volta para a primeira
+    if (ehUltimaMusica) {
+      setMusicaAtual(musicas[0]);
+    } else {
+      // Se não for a última, apenas segue para a próxima normalmente
+      setMusicaAtual(musicas[indexAtual + 1]);
+    }
+  } else {
+    // Se o repetir estiver DESLIGADO, ele só pula se não for a última
+    if (!ehUltimaMusica) {
+      setMusicaAtual(musicas[indexAtual + 1]);
+    }
+    // Se for a última e o repetir estiver desligado, o player para (comportamento padrão)
+  }
+};
+
 
   return (
     <BrowserRouter>
@@ -102,7 +145,24 @@ function App() {
               musicas={musicas}
               onAdd={(f, limpar) => adicionarMedia(f, limpar, 'audio')}
               onSelect={(m) => { setVideoAtual(null); setMusicaAtual(m); }}
-              onRemove={async (n) => { await deletarDoDB(n); setMusicas(p => p.filter(x => x.name !== n)); }}
+              onRemove={async (n) => {
+                // 1. Descobrir se é a música que está tocando agora
+                if (musicaAtual?.name === n) {
+                  const index = musicas.findIndex(m => m.name === n);
+                  // 2. Se houver uma próxima, toca ela. Se não, para o player.
+                  if (index !== -1 && index < musicas.length - 1) {
+                    setMusicaAtual(musicas[index + 1]);
+                  } else if (musicas.length > 1) {
+                    setMusicaAtual(musicas[0]); // Volta para a primeira se for a última da lista
+                  } else {
+                    setMusicaAtual(null); // Se era a única, limpa o player
+                  }
+                }
+
+                // 3. Deleta do banco e da lista
+                await deletarDoDB(n);
+                setMusicas(p => p.filter(x => x.name !== n));
+              }}
               musicaAtiva={musicaAtual}
               onClearAll={() => excluirTudo('audio')}
             />
@@ -112,7 +172,24 @@ function App() {
               musicas={musicas}
               onAdd={(f, limpar) => adicionarMedia(f, limpar, 'audio')}
               onSelect={(m) => { setVideoAtual(null); setMusicaAtual(m); }}
-              onRemove={async (n) => { await deletarDoDB(n); setMusicas(p => p.filter(x => x.name !== n)); }}
+              onRemove={async (n) => {
+                // 1. Descobrir se é a música que está tocando agora
+                if (musicaAtual?.name === n) {
+                  const index = musicas.findIndex(m => m.name === n);
+                  // 2. Se houver uma próxima, toca ela. Se não, para o player.
+                  if (index !== -1 && index < musicas.length - 1) {
+                    setMusicaAtual(musicas[index + 1]);
+                  } else if (musicas.length > 1) {
+                    setMusicaAtual(musicas[0]); // Volta para a primeira se for a última da lista
+                  } else {
+                    setMusicaAtual(null); // Se era a única, limpa o player
+                  }
+                }
+
+                // 3. Deleta do banco e da lista
+                await deletarDoDB(n);
+                setMusicas(p => p.filter(x => x.name !== n));
+              }}
               musicaAtiva={musicaAtual}
               onClearAll={() => excluirTudo('audio')}
             />
@@ -121,10 +198,27 @@ function App() {
             <Video
               videos={videos}
               onAdd={(f, limpar) => adicionarMedia(f, limpar, 'video')}
-              onSelect={(v) => { if (audioRef.current) audioRef.current.pause(); setVideoAtual(v); }}
-              onRemove={async (n) => { await deletarDoDB(n); setVideos(p => p.filter(x => x.name !== n)); }}
+              onSelect={(v) => {
+                if (audioRef.current) audioRef.current.pause();
+                setVideoAtual(v);
+              }}
+              onRemove={async (n) => {
+                if (videoAtual?.name === n) {
+                  const index = videos.findIndex(v => v.name === n);
+                  if (index !== -1 && index < videos.length - 1) {
+                    setVideoAtual(videos[index + 1]);
+                  } else if (videos.length > 1) {
+                    setVideoAtual(videos[0]);
+                  } else {
+                    setVideoAtual(null);
+                  }
+                }
+
+                await deletarDoDB(n);
+                setVideos(p => p.filter(x => x.name !== n));
+              }}
               videoAtivo={videoAtual}
-              onEnded={() => setVideoAtual(null)}
+              onEnded={tocarProximoVideo} // Agora ele tenta tocar o próximo em vez de sumir
               onClearAll={() => excluirTudo('video')}
             />
           } />
@@ -132,8 +226,38 @@ function App() {
       </main>
 
       {musicaAtual && (
-        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#222', color: 'white', padding: '15px', textAlign: 'center' }}>
-          <audio className="player-bar" ref={audioRef} src={musicaAtual.url} controls autoPlay style={{ width: '100%', maxWidth: '600px' }} />
+        <div style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0,
+          background: '#222', color: 'white', padding: '15px',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', width: '100%', maxWidth: '600px' }}>
+
+            {/* Botão de Repetir Customizado */}
+            <button
+              onClick={() => setRepetir(!repetir)}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px',
+                color: repetir ? 'var(--primary-gold)' : '#888',
+                transition: 'color 0.3s'
+              }}
+              title={repetir ? "Repetir: Ligado" : "Repetir: Desligado"}
+            >
+              {repetir ? IconComponent("repeat", "var(--primary-gold)") : IconComponent("repeat", "#888")}
+            </button>
+
+            <audio
+              ref={audioRef}
+              src={musicaAtual.url}
+              controls
+              autoPlay
+              onEnded={lidarComFimDaMusica} // Usa a nova lógica
+              style={{ flex: 1 }}
+            />
+          </div>
+          <div style={{ fontSize: '12px', color: 'var(--primary-gold)' }}>
+            Tocando agora: {musicaAtual.name}
+          </div>
         </div>
       )}
     </BrowserRouter>

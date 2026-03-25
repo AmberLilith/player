@@ -14,10 +14,12 @@ interface VideoProps {
 function Video({ videos, onAdd, onSelect, onRemove, onEnded, videoAtivo, onClearAll }: VideoProps) {
     const videoRef = useRef<HTMLVideoElement>(null)
 
-    const handleInput = (limpar: boolean) => {
+    const handleInput = (limpar: boolean, isDirectory: boolean) => {
         const input = document.createElement('input');
         input.type = 'file';
         input.multiple = true;
+        (input as any).webkitdirectory = isDirectory;
+        (input as any).directory = isDirectory;
         input.accept = 'video/*';
         input.onchange = (e) => {
             const f = (e.target as HTMLInputElement).files;
@@ -38,13 +40,13 @@ function Video({ videos, onAdd, onSelect, onRemove, onEnded, videoAtivo, onClear
 
             <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
                 <button
-                    onClick={() => handleInput(true)}
+                    onClick={() => handleInput(true, true)}
                     style={{ padding: '10px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                 >
-                    📂 Abrir Nova Playlist
+                    📂 Abrir Pasta
                 </button>
                 <button
-                    onClick={() => handleInput(false)}
+                    onClick={() => handleInput(false,false)}
                     style={{ padding: '10px', background: '#2196F3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                 >
                     ➕ Adicionar Vídeos
