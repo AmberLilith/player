@@ -25,9 +25,9 @@ function Music({ musicas, onAdd, onSelect, onRemove, musicaAtiva, onClearAll }: 
     // TUDO que for visual precisa estar dentro deste return
     return (
         <div>
-            <h1>Minhas Músicas</h1>
+            <h1  style={{textAlign: 'center'}}>Minhas Músicas</h1>
 
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', justifyContent: 'center' }}>
                 <button
                     onClick={() => handleInput(true)}
                     style={{ padding: '10px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
