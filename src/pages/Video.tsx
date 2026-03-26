@@ -23,7 +23,10 @@ function Video({ videos, onAdd, onSelect, onRemove, onEnded, videoAtivo, onClear
         input.accept = 'video/*';
         input.onchange = (e) => {
             const f = (e.target as HTMLInputElement).files;
-            if (f) onAdd(Array.from(f), limpar);
+            if (f) {
+  const soVideo = Array.from(f).filter(file => file.type.startsWith('video/'))
+  if (soVideo.length > 0) onAdd(soVideo, limpar)
+}
         };
         input.click();
     }

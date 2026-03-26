@@ -18,7 +18,7 @@ function App() {
   const [videoAtual, setVideoAtual] = useState<MediaFile | null>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
   const [repetir, setRepetir] = useState(false)
-  const isRestoring = useRef(false)  // flag para diferenciar restauração de clique do usuário
+  const isRestoring = useRef(false)
 
   useEffect(() => {
     const carregar = async () => {
@@ -43,7 +43,7 @@ function App() {
       if (ultimaMusicaNome) {
         const encontrada = mTemp.find(m => m.name === ultimaMusicaNome);
         if (encontrada) {
-          isRestoring.current = true  // sinaliza que é uma restauração, não um clique do usuário
+          isRestoring.current = true
           setMusicaAtual(encontrada);
         }
       }
@@ -51,7 +51,6 @@ function App() {
     carregar();
   }, []);
 
-  // Salva o tempo atual no localStorage a cada segundo
   useEffect(() => {
     const interval = setInterval(() => {
       if (audioRef.current && musicaAtual) {
@@ -59,20 +58,23 @@ function App() {
         localStorage.setItem('ultima_musica_nome', musicaAtual.name);
       }
     }, 1000);
-
     return () => clearInterval(interval);
   }, [musicaAtual]);
 
-  // Roda quando musicaAtual muda — mas respeita a flag isRestoring
   useEffect(() => {
     if (audioRef.current && musicaAtual) {
       if (isRestoring.current) {
-        isRestoring.current = false  // reseta a flag para a próxima troca
-        return  // não dá play, só deixa preparado para o usuário
+        isRestoring.current = false
+        return
       }
       audioRef.current.play();
     }
   }, [musicaAtual]);
+
+  // Reordena a playlist sem tocar no estado do áudio
+  const reordenarMusicas = (novaOrdem: MediaFile[]) => {
+    setMusicas(novaOrdem)
+  }
 
   const adicionarMedia = async (files: File[], limparAnterior: boolean, tipo: 'audio' | 'video') => {
     if (limparAnterior) {
@@ -154,6 +156,30 @@ function App() {
     }
   };
 
+  // Props do Music extraídas para evitar repetição nas duas rotas
+  const musicaProps = {
+    musicas,
+    onAdd: (f: File[], limpar: boolean) => adicionarMedia(f, limpar, 'audio'),
+    onSelect: (m: MediaFile) => { setVideoAtual(null); setMusicaAtual(m); },
+    onRemove: async (n: string) => {
+      if (musicaAtual?.name === n) {
+        const index = musicas.findIndex(m => m.name === n);
+        if (index !== -1 && index < musicas.length - 1) {
+          setMusicaAtual(musicas[index + 1]);
+        } else if (musicas.length > 1) {
+          setMusicaAtual(musicas[0]);
+        } else {
+          setMusicaAtual(null);
+        }
+      }
+      await deletarDoDB(n);
+      setMusicas(p => p.filter(x => x.name !== n));
+    },
+    musicaAtiva: musicaAtual,
+    onClearAll: () => excluirTudo('audio'),
+    onReorder: reordenarMusicas,  // nova prop para drag and drop
+  }
+
   return (
     <BrowserRouter>
       <nav style={{ padding: '15px', background: '#1a1a1a', display: 'flex', gap: '20px' }}>
@@ -163,52 +189,8 @@ function App() {
 
       <main style={{ padding: '20px', paddingBottom: '120px' }}>
         <Routes>
-          <Route path="/" element={
-            <Music
-              musicas={musicas}
-              onAdd={(f, limpar) => adicionarMedia(f, limpar, 'audio')}
-              onSelect={(m) => { setVideoAtual(null); setMusicaAtual(m); }}
-              onRemove={async (n) => {
-                if (musicaAtual?.name === n) {
-                  const index = musicas.findIndex(m => m.name === n);
-                  if (index !== -1 && index < musicas.length - 1) {
-                    setMusicaAtual(musicas[index + 1]);
-                  } else if (musicas.length > 1) {
-                    setMusicaAtual(musicas[0]);
-                  } else {
-                    setMusicaAtual(null);
-                  }
-                }
-                await deletarDoDB(n);
-                setMusicas(p => p.filter(x => x.name !== n));
-              }}
-              musicaAtiva={musicaAtual}
-              onClearAll={() => excluirTudo('audio')}
-            />
-          } />
-          <Route path="/music" element={
-            <Music
-              musicas={musicas}
-              onAdd={(f, limpar) => adicionarMedia(f, limpar, 'audio')}
-              onSelect={(m) => { setVideoAtual(null); setMusicaAtual(m); }}
-              onRemove={async (n) => {
-                if (musicaAtual?.name === n) {
-                  const index = musicas.findIndex(m => m.name === n);
-                  if (index !== -1 && index < musicas.length - 1) {
-                    setMusicaAtual(musicas[index + 1]);
-                  } else if (musicas.length > 1) {
-                    setMusicaAtual(musicas[0]);
-                  } else {
-                    setMusicaAtual(null);
-                  }
-                }
-                await deletarDoDB(n);
-                setMusicas(p => p.filter(x => x.name !== n));
-              }}
-              musicaAtiva={musicaAtual}
-              onClearAll={() => excluirTudo('audio')}
-            />
-          } />
+          <Route path="/" element={<Music {...musicaProps} />} />
+          <Route path="/music" element={<Music {...musicaProps} />} />
           <Route path="/video" element={
             <Video
               videos={videos}

@@ -1,33 +1,168 @@
+import {
+    closestCenter,
+    DndContext,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    type DragEndEvent
+} from '@dnd-kit/core'
+import {
+    arrayMove,
+    SortableContext,
+    useSortable,
+    verticalListSortingStrategy
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import type { MediaFile } from '../App'
 
 interface MusicProps {
-    musicas: MediaFile[];
-    onAdd: (f: File[], l: boolean) => void;
-    onSelect: (m: MediaFile) => void;
-    onRemove: (n: string) => void;
-    musicaAtiva: MediaFile | null;
-    onClearAll: () => void;
+    musicas: MediaFile[]
+    onAdd: (f: File[], l: boolean) => void
+    onSelect: (m: MediaFile) => void
+    onRemove: (n: string) => void
+    musicaAtiva: MediaFile | null
+    onClearAll: () => void
+    onReorder: (novaOrdem: MediaFile[]) => void  // nova prop
 }
 
-function Music({ musicas, onAdd, onSelect, onRemove, musicaAtiva, onClearAll }: MusicProps) {
+// Componente separado para cada item da lista — necessário para o useSortable
+interface ItemProps {
+    musica: MediaFile
+    ativa: boolean
+    onSelect: (m: MediaFile) => void
+    onRemove: (n: string) => void
+}
 
-    const handleInput = (limpar: boolean, isDirectory: boolean) => {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.multiple = true;
-        (input as any).webkitdirectory = isDirectory;
-        (input as any).directory = isDirectory;
+function MusicItem({ musica, ativa, onSelect, onRemove }: ItemProps) {
+    // useSortable dá ao item os atributos e listeners de drag
+    const {
+        attributes,    // acessibilidade (aria-*)
+        listeners,     // eventos de drag (onPointerDown, etc)
+        setNodeRef,    // ref para o elemento DOM
+        transform,     // posição atual durante o drag
+        transition,    // animação de retorno
+        isDragging,    // true enquanto está sendo arrastado
+    } = useSortable({ id: musica.name })
 
-        input.accept = 'audio/*';
-
-        input.onchange = (e) => {
-            const f = (e.target as HTMLInputElement).files;
-            if (f) onAdd(Array.from(f), limpar);
-        };
-        input.click();
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,  // fica semitransparente enquanto arrasta
     }
 
-    // TUDO que for visual precisa estar dentro deste return
+    return (
+        <li
+            ref={setNodeRef}
+            style={{
+                ...style,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '12px 15px',
+                marginBottom: '8px',
+                borderRadius: '6px',
+                background: 'var(--bg-card)',
+                cursor: 'pointer',
+                border: ativa ? '1px solid var(--primary-gold)' : '1px solid #222',
+                transition: 'all 0.2s ease',
+            }}
+            onClick={() => onSelect(musica)}
+        >
+            {/* Ícone de drag — só essa área aciona o drag */}
+            <span
+                {...attributes}
+                {...listeners}
+                onClick={(e) => e.stopPropagation()}  // evita tocar a música ao clicar no handle
+                style={{
+                    cursor: 'grab',
+                    padding: '0 10px 0 0',
+                    color: '#555',
+                    fontSize: '18px',
+                    userSelect: 'none',
+                    flexShrink: 0,
+                }}
+                title="Arraste para reordenar"
+            >
+                ⠿
+            </span>
+
+            <span
+                style={{
+                    flex: 1,
+                    color: ativa ? 'var(--primary-gold)' : 'var(--text-main)',
+                    fontSize: '14px',
+                    fontWeight: ativa ? '600' : '400',
+                    pointerEvents: 'none',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                }}
+            >
+                {musica.name}
+            </span>
+
+            <button
+                onClick={(e) => {
+                    e.stopPropagation()
+                    onRemove(musica.name)
+                }}
+                style={{
+                    color: '#ff4444',
+                    border: 'none',
+                    background: 'none',
+                    cursor: 'pointer',
+                    padding: '8px',
+                    fontSize: '18px',
+                    flexShrink: 0,
+                }}
+            >
+                🗑️
+            </button>
+        </li>
+    )
+}
+
+function Music({ musicas, onAdd, onSelect, onRemove, musicaAtiva, onClearAll, onReorder }: MusicProps) {
+
+    // PointerSensor funciona para mouse e touch
+    // A distância mínima de 8px evita acionar drag em cliques normais
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: { distance: 8 }
+        })
+    )
+
+    const handleInput = (limpar: boolean, isDirectory: boolean) => {
+        const input = document.createElement('input')
+        input.type = 'file'
+        input.multiple = true
+            ; (input as any).webkitdirectory = isDirectory
+            ; (input as any).directory = isDirectory
+        input.accept = 'audio/*'
+        input.onchange = (e) => {
+            const f = (e.target as HTMLInputElement).files
+            if (f) {
+                const soAudio = Array.from(f).filter(file => file.type.startsWith('audio/'))
+                if (soAudio.length > 0) onAdd(soAudio, limpar)
+            }
+        }
+        input.click()
+    }
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event
+
+        // Se soltou no mesmo lugar, não faz nada
+        if (!over || active.id === over.id) return
+
+        const oldIndex = musicas.findIndex(m => m.name === active.id)
+        const newIndex = musicas.findIndex(m => m.name === over.id)
+
+        // arrayMove reorganiza o array mantendo todos os itens
+        // O estado do áudio no App.tsx não é tocado — só a ordem muda
+        onReorder(arrayMove(musicas, oldIndex, newIndex))
+    }
+
     return (
         <div>
             <h1 style={{ textAlign: 'center' }}>Minhas Músicas</h1>
@@ -55,11 +190,10 @@ function Music({ musicas, onAdd, onSelect, onRemove, musicaAtiva, onClearAll }: 
                 )}
             </div>
 
-            {/* Lógica Condicional: Vazio vs Lista */}
             {musicas.length === 0 ? (
                 <div style={{
                     maxWidth: '500px',
-                    margin: '40px auto 0 auto', // 40px no topo e 'auto' nas laterais para centralizar
+                    margin: '40px auto 0 auto',
                     padding: '40px',
                     textAlign: 'center',
                     border: '2px dashed #333',
@@ -72,60 +206,33 @@ function Music({ musicas, onAdd, onSelect, onRemove, musicaAtiva, onClearAll }: 
                     <p style={{ fontSize: '12px' }}>A playlist carregada é armazenada apenas no seu navegador.</p>
                 </div>
             ) : (
-                <ul style={{ listStyle: 'none', padding: 0, marginTop: '20px' }}>
-                    {musicas.map((m) => (
-                        <li
-                            key={m.name}
-                            onClick={() => onSelect(m)}
-                            className={musicaAtiva?.name === m.name ? 'active-item' : ''}
-                            style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                padding: '12px 15px',
-                                marginBottom: '8px',
-                                borderRadius: '6px',
-                                background: 'var(--bg-card)',
-                                cursor: 'pointer',
-                                border: musicaAtiva?.name === m.name ? '1px solid var(--primary-gold)' : '1px solid #222',
-                                transition: 'all 0.2s ease'
-                            }}
-                        >
-                            <span
-                                style={{
-                                    flex: 1,
-                                    color: musicaAtiva?.name === m.name ? 'var(--primary-gold)' : 'var(--text-main)',
-                                    fontSize: '14px',
-                                    fontWeight: musicaAtiva?.name === m.name ? '600' : '400',
-                                    pointerEvents: 'none'
-                                }}
-                            >
-                                {m.name}
-                            </span>
-
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onRemove(m.name);
-                                }}
-                                style={{
-                                    color: '#ff4444',
-                                    border: 'none',
-                                    background: 'none',
-                                    cursor: 'pointer',
-                                    padding: '8px',
-                                    fontSize: '18px',
-                                    zIndex: 2
-                                }}
-                            >
-                                🗑️
-                            </button>
-                        </li>
-                    ))}
-                </ul>
+                // DndContext — contexto que gerencia todo o drag and drop
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                >
+                    {/* SortableContext — lista os ids dos itens ordenáveis */}
+                    <SortableContext
+                        items={musicas.map(m => m.name)}
+                        strategy={verticalListSortingStrategy}
+                    >
+                        <ul style={{ listStyle: 'none', padding: 0, marginTop: '20px' }}>
+                            {musicas.map((m) => (
+                                <MusicItem
+                                    key={m.name}
+                                    musica={m}
+                                    ativa={musicaAtiva?.name === m.name}
+                                    onSelect={onSelect}
+                                    onRemove={onRemove}
+                                />
+                            ))}
+                        </ul>
+                    </SortableContext>
+                </DndContext>
             )}
         </div>
-    );
+    )
 }
 
-export default Music;
+export default Music
