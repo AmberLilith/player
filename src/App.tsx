@@ -18,7 +18,6 @@ function App() {
   const [videoAtual, setVideoAtual] = useState<MediaFile | null>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
   const [repetir, setRepetir] = useState(false);
-  const [primeiroCarregamento, setPrimeiroCarregamento] = useState(true);
 
   useEffect(() => {
     const carregar = async () => {
