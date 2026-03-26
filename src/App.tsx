@@ -140,7 +140,7 @@ function App() {
     // atualizar o 'src' antes de mandarmos tocar
     setTimeout(() => {
       if (audioRef.current) {
-        audioRef.current.play().catch(err => {
+        audioRef.current.play().catch(_ => {
           console.log("Autoplay bloqueado pelo browser, aguardando interação.");
         });
       }
