@@ -18,6 +18,7 @@ function App() {
   const [videoAtual, setVideoAtual] = useState<MediaFile | null>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
   const [repetir, setRepetir] = useState(false);
+  const [primeiroCarregamento, setPrimeiroCarregamento] = useState(true);
 
   useEffect(() => {
     const carregar = async () => {
@@ -50,18 +51,26 @@ function App() {
     carregar();
   }, []);
 
+
   // Salva o tempo atual no localStorage a cada segundo
   useEffect(() => {
     const interval = setInterval(() => {
       if (audioRef.current && musicaAtual) {
-        // Salva o tempo atual da música específica
-        localStorage.setItem(`progresso_${musicaAtual.name}`, audioRef.current.currentTime.toString());
-        // Salva qual foi a última música aberta no player
+        // Usamos chaves FIXAS para que o valor anterior seja substituído
+        localStorage.setItem('ultimo_progresso_tempo', audioRef.current.currentTime.toString());
         localStorage.setItem('ultima_musica_nome', musicaAtual.name);
       }
     }, 1000);
 
     return () => clearInterval(interval);
+  }, [musicaAtual]);
+
+  useEffect(() => {
+    if (audioRef.current && musicaAtual) {
+      audioRef.current.play();
+
+
+    }
   }, [musicaAtual]);
 
   const adicionarMedia = async (files: File[], limparAnterior: boolean, tipo: 'audio' | 'video') => {
@@ -122,31 +131,31 @@ function App() {
   };
 
   const lidarComFimDaMusica = () => {
-  const indexAtual = musicas.findIndex(m => m.name === musicaAtual?.name);
-  const ehUltimaMusica = indexAtual === musicas.length - 1;
+    const indexAtual = musicas.findIndex(m => m.name === musicaAtual?.name);
+    const ehUltimaMusica = indexAtual === musicas.length - 1;
 
-  let proxima: MediaFile | null = null;
+    let proxima: MediaFile | null = null;
 
-  if (repetir && ehUltimaMusica) {
-    proxima = musicas[0];
-  } else if (!ehUltimaMusica) {
-    proxima = musicas[indexAtual + 1];
-  }
+    if (repetir && ehUltimaMusica) {
+      proxima = musicas[0];
+    } else if (!ehUltimaMusica) {
+      proxima = musicas[indexAtual + 1];
+    }
 
-  if (proxima) {
-    setMusicaAtual(proxima);
-    
-    // O segredo está aqui: dar um pequeno delay para o React 
-    // atualizar o 'src' antes de mandarmos tocar
-    setTimeout(() => {
-      if (audioRef.current) {
-        audioRef.current.play().catch(_ => {
-          console.log("Autoplay bloqueado pelo browser, aguardando interação.");
-        });
-      }
-    }, 100); 
-  }
-};
+    if (proxima) {
+      setMusicaAtual(proxima);
+
+      // O segredo está aqui: dar um pequeno delay para o React 
+      // atualizar o 'src' antes de mandarmos tocar
+      setTimeout(() => {
+        if (audioRef.current) {
+          audioRef.current.play().catch(_ => {
+            console.log("Autoplay bloqueado pelo browser, aguardando interação.");
+          });
+        }
+      }, 100);
+    }
+  };
 
 
   return (
@@ -285,7 +294,7 @@ function App() {
               }}
               title={repetir ? "Repetir Playlist: Ligado" : "Repetir Playlist: Desligado"}
             >
-              {IconComponent("repeat", repetir ? 'var(--primary-gold)' : '#888')}         
+              {IconComponent("repeat", repetir ? 'var(--primary-gold)' : '#888')}
             </button>
 
             {/* Player de Áudio */}
@@ -293,16 +302,14 @@ function App() {
               ref={audioRef}
               src={musicaAtual.url}
               controls
-              // Remova o autoPlay daqui se quiser que ele NUNCA toque sozinho ao mudar de música
-              // Ou mantenha se quiser que ele só NÃO toque no primeiro carregamento do dia
               onEnded={lidarComFimDaMusica}
               onLoadedMetadata={() => {
-                const salvo = localStorage.getItem(`progresso_${musicaAtual.name}`);
-                if (salvo && audioRef.current) {
-                  audioRef.current.currentTime = parseFloat(salvo);
+                const tempoSalvo = localStorage.getItem('ultimo_progresso_tempo');
+                const nomeSalvo = localStorage.getItem('ultima_musica_nome');
 
-                  // Se você quiser que ele NÃO comece tocando ao reabrir o app:
-                  // audioRef.current.pause(); 
+                // Só aplica o tempo se o nome da música atual for o mesmo nome que salvamos
+                if (tempoSalvo && nomeSalvo === musicaAtual.name && audioRef.current) {
+                  audioRef.current.currentTime = parseFloat(tempoSalvo);
                 }
               }}
               style={{ width: '100%', maxWidth: '500px' }}
