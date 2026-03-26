@@ -122,25 +122,31 @@ function App() {
   };
 
   const lidarComFimDaMusica = () => {
-    const indexAtual = musicas.findIndex(m => m.name === musicaAtual?.name);
-    const ehUltimaMusica = indexAtual === musicas.length - 1;
+  const indexAtual = musicas.findIndex(m => m.name === musicaAtual?.name);
+  const ehUltimaMusica = indexAtual === musicas.length - 1;
 
-    if (repetir) {
-      // Se for a última e o repetir estiver ligado, volta para a primeira
-      if (ehUltimaMusica) {
-        setMusicaAtual(musicas[0]);
-      } else {
-        // Se não for a última, apenas segue para a próxima normalmente
-        setMusicaAtual(musicas[indexAtual + 1]);
+  let proxima: MediaFile | null = null;
+
+  if (repetir && ehUltimaMusica) {
+    proxima = musicas[0];
+  } else if (!ehUltimaMusica) {
+    proxima = musicas[indexAtual + 1];
+  }
+
+  if (proxima) {
+    setMusicaAtual(proxima);
+    
+    // O segredo está aqui: dar um pequeno delay para o React 
+    // atualizar o 'src' antes de mandarmos tocar
+    setTimeout(() => {
+      if (audioRef.current) {
+        audioRef.current.play().catch(_ => {
+          console.log("Autoplay bloqueado pelo browser, aguardando interação.");
+        });
       }
-    } else {
-      // Se o repetir estiver DESLIGADO, ele só pula se não for a última
-      if (!ehUltimaMusica) {
-        setMusicaAtual(musicas[indexAtual + 1]);
-      }
-      // Se for a última e o repetir estiver desligado, o player para (comportamento padrão)
-    }
-  };
+    }, 100); 
+  }
+};
 
 
   return (
