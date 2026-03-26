@@ -37,9 +37,32 @@ function App() {
 
       setMusicas(mTemp);
       setVideos(vTemp);
+
+      // --- NOVO: Recuperar a última música selecionada ---
+      const ultimaMusicaNome = localStorage.getItem('ultima_musica_nome');
+      if (ultimaMusicaNome) {
+        const encontrada = mTemp.find(m => m.name === ultimaMusicaNome);
+        if (encontrada) {
+          setMusicaAtual(encontrada);
+        }
+      }
     };
     carregar();
   }, []);
+
+  // Salva o tempo atual no localStorage a cada segundo
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (audioRef.current && musicaAtual) {
+        // Salva o tempo atual da música específica
+        localStorage.setItem(`progresso_${musicaAtual.name}`, audioRef.current.currentTime.toString());
+        // Salva qual foi a última música aberta no player
+        localStorage.setItem('ultima_musica_nome', musicaAtual.name);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [musicaAtual]);
 
   const adicionarMedia = async (files: File[], limparAnterior: boolean, tipo: 'audio' | 'video') => {
     if (limparAnterior) {
@@ -110,25 +133,25 @@ function App() {
   };
 
   const lidarComFimDaMusica = () => {
-  const indexAtual = musicas.findIndex(m => m.name === musicaAtual?.name);
-  const ehUltimaMusica = indexAtual === musicas.length - 1;
+    const indexAtual = musicas.findIndex(m => m.name === musicaAtual?.name);
+    const ehUltimaMusica = indexAtual === musicas.length - 1;
 
-  if (repetir) {
-    // Se for a última e o repetir estiver ligado, volta para a primeira
-    if (ehUltimaMusica) {
-      setMusicaAtual(musicas[0]);
+    if (repetir) {
+      // Se for a última e o repetir estiver ligado, volta para a primeira
+      if (ehUltimaMusica) {
+        setMusicaAtual(musicas[0]);
+      } else {
+        // Se não for a última, apenas segue para a próxima normalmente
+        setMusicaAtual(musicas[indexAtual + 1]);
+      }
     } else {
-      // Se não for a última, apenas segue para a próxima normalmente
-      setMusicaAtual(musicas[indexAtual + 1]);
+      // Se o repetir estiver DESLIGADO, ele só pula se não for a última
+      if (!ehUltimaMusica) {
+        setMusicaAtual(musicas[indexAtual + 1]);
+      }
+      // Se for a última e o repetir estiver desligado, o player para (comportamento padrão)
     }
-  } else {
-    // Se o repetir estiver DESLIGADO, ele só pula se não for a última
-    if (!ehUltimaMusica) {
-      setMusicaAtual(musicas[indexAtual + 1]);
-    }
-    // Se for a última e o repetir estiver desligado, o player para (comportamento padrão)
-  }
-};
+  };
 
 
   return (
@@ -227,36 +250,79 @@ function App() {
 
       {musicaAtual && (
         <div style={{
-          position: 'fixed', bottom: 0, left: 0, right: 0,
-          background: '#222', color: 'white', padding: '15px',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px'
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: '#222',
+          color: 'white',
+          padding: '15px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center', // Centraliza os blocos verticalmente
+          justifyContent: 'center', // Centraliza horizontalmente
+          gap: '10px',
+          zIndex: 9999,
+          boxShadow: '0 -5px 15px rgba(0,0,0,0.5)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', width: '100%', maxWidth: '600px' }}>
+          {/* Container da linha de controles */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center', // Garante que o conteúdo interno fique no meio
+            gap: '15px',
+            width: '100%',
+            maxWidth: '800px' // Aumentei um pouco para dar respiro
+          }}>
 
-            {/* Botão de Repetir Customizado */}
+            {/* Botão de Repetir */}
             <button
               onClick={() => setRepetir(!repetir)}
               style={{
-                background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '24px', // Um pouco maior para facilitar o clique
                 color: repetir ? 'var(--primary-gold)' : '#888',
-                transition: 'color 0.3s'
+                transition: 'all 0.3s ease',
+                display: 'flex',
+                alignItems: 'center'
               }}
-              title={repetir ? "Repetir: Ligado" : "Repetir: Desligado"}
+              title={repetir ? "Repetir Playlist: Ligado" : "Repetir Playlist: Desligado"}
             >
-              {repetir ? IconComponent("repeat", "var(--primary-gold)") : IconComponent("repeat", "#888")}
+              🔁
             </button>
 
+            {/* Player de Áudio */}
             <audio
               ref={audioRef}
               src={musicaAtual.url}
               controls
-              autoPlay
-              onEnded={lidarComFimDaMusica} // Usa a nova lógica
-              style={{ flex: 1 }}
+              // Remova o autoPlay daqui se quiser que ele NUNCA toque sozinho ao mudar de música
+              // Ou mantenha se quiser que ele só NÃO toque no primeiro carregamento do dia
+              onEnded={lidarComFimDaMusica}
+              onLoadedMetadata={() => {
+                const salvo = localStorage.getItem(`progresso_${musicaAtual.name}`);
+                if (salvo && audioRef.current) {
+                  audioRef.current.currentTime = parseFloat(salvo);
+
+                  // Se você quiser que ele NÃO comece tocando ao reabrir o app:
+                  // audioRef.current.pause(); 
+                }
+              }}
+              style={{ width: '100%', maxWidth: '500px' }}
             />
           </div>
-          <div style={{ fontSize: '12px', color: 'var(--primary-gold)' }}>
-            Tocando agora: {musicaAtual.name}
+
+          {/* Informação da música atual */}
+          <div style={{
+            fontSize: '14px',
+            color: 'var(--primary-gold)',
+            textAlign: 'center',
+            width: '100%',
+            maxWidth: '500px'
+          }}>
+            🎵 {musicaAtual.name}
           </div>
         </div>
       )}
