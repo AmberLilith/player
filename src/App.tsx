@@ -112,17 +112,6 @@ function App() {
     }
   };
 
-  const tocarProximaMusica = () => {
-    if (!musicaAtual) return;
-    const index = musicas.findIndex(m => m.name === musicaAtual.name);
-    if (index !== -1 && index < musicas.length - 1) {
-      setMusicaAtual(musicas[index + 1]);
-    } else {
-      // Opcional: Volta para a primeira se quiser "Loop da Playlist"
-      setMusicaAtual(musicas[0]);
-    }
-  };
-
   const tocarProximoVideo = () => {
     if (!videoAtual) return;
     const index = videos.findIndex(v => v.name === videoAtual.name);
@@ -290,7 +279,7 @@ function App() {
               }}
               title={repetir ? "Repetir Playlist: Ligado" : "Repetir Playlist: Desligado"}
             >
-              🔁
+              {IconComponent("repeat", repetir ? 'var(--primary-gold)' : '#888')}         
             </button>
 
             {/* Player de Áudio */}
