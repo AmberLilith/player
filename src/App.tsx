@@ -17,7 +17,8 @@ function App() {
   const [musicaAtual, setMusicaAtual] = useState<MediaFile | null>(null)
   const [videoAtual, setVideoAtual] = useState<MediaFile | null>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
-  const [repetir, setRepetir] = useState(false);
+  const [repetir, setRepetir] = useState(false)
+  const isRestoring = useRef(false)  // flag para diferenciar restauração de clique do usuário
 
   useEffect(() => {
     const carregar = async () => {
@@ -38,11 +39,11 @@ function App() {
       setMusicas(mTemp);
       setVideos(vTemp);
 
-      // --- NOVO: Recuperar a última música selecionada ---
       const ultimaMusicaNome = localStorage.getItem('ultima_musica_nome');
       if (ultimaMusicaNome) {
         const encontrada = mTemp.find(m => m.name === ultimaMusicaNome);
         if (encontrada) {
+          isRestoring.current = true  // sinaliza que é uma restauração, não um clique do usuário
           setMusicaAtual(encontrada);
         }
       }
@@ -50,12 +51,10 @@ function App() {
     carregar();
   }, []);
 
-
   // Salva o tempo atual no localStorage a cada segundo
   useEffect(() => {
     const interval = setInterval(() => {
       if (audioRef.current && musicaAtual) {
-        // Usamos chaves FIXAS para que o valor anterior seja substituído
         localStorage.setItem('ultimo_progresso_tempo', audioRef.current.currentTime.toString());
         localStorage.setItem('ultima_musica_nome', musicaAtual.name);
       }
@@ -64,11 +63,14 @@ function App() {
     return () => clearInterval(interval);
   }, [musicaAtual]);
 
+  // Roda quando musicaAtual muda — mas respeita a flag isRestoring
   useEffect(() => {
     if (audioRef.current && musicaAtual) {
+      if (isRestoring.current) {
+        isRestoring.current = false  // reseta a flag para a próxima troca
+        return  // não dá play, só deixa preparado para o usuário
+      }
       audioRef.current.play();
-
-
     }
   }, [musicaAtual]);
 
@@ -126,7 +128,6 @@ function App() {
     if (index !== -1 && index < videos.length - 1) {
       setVideoAtual(videos[index + 1]);
     }
-    // Se não quiser que o player suma no último vídeo, apenas não dê o setVideoAtual(null)
   };
 
   const lidarComFimDaMusica = () => {
@@ -143,9 +144,6 @@ function App() {
 
     if (proxima) {
       setMusicaAtual(proxima);
-
-      // O segredo está aqui: dar um pequeno delay para o React 
-      // atualizar o 'src' antes de mandarmos tocar
       setTimeout(() => {
         if (audioRef.current) {
           audioRef.current.play().catch(_ => {
@@ -155,7 +153,6 @@ function App() {
       }, 100);
     }
   };
-
 
   return (
     <BrowserRouter>
@@ -172,20 +169,16 @@ function App() {
               onAdd={(f, limpar) => adicionarMedia(f, limpar, 'audio')}
               onSelect={(m) => { setVideoAtual(null); setMusicaAtual(m); }}
               onRemove={async (n) => {
-                // 1. Descobrir se é a música que está tocando agora
                 if (musicaAtual?.name === n) {
                   const index = musicas.findIndex(m => m.name === n);
-                  // 2. Se houver uma próxima, toca ela. Se não, para o player.
                   if (index !== -1 && index < musicas.length - 1) {
                     setMusicaAtual(musicas[index + 1]);
                   } else if (musicas.length > 1) {
-                    setMusicaAtual(musicas[0]); // Volta para a primeira se for a última da lista
+                    setMusicaAtual(musicas[0]);
                   } else {
-                    setMusicaAtual(null); // Se era a única, limpa o player
+                    setMusicaAtual(null);
                   }
                 }
-
-                // 3. Deleta do banco e da lista
                 await deletarDoDB(n);
                 setMusicas(p => p.filter(x => x.name !== n));
               }}
@@ -199,20 +192,16 @@ function App() {
               onAdd={(f, limpar) => adicionarMedia(f, limpar, 'audio')}
               onSelect={(m) => { setVideoAtual(null); setMusicaAtual(m); }}
               onRemove={async (n) => {
-                // 1. Descobrir se é a música que está tocando agora
                 if (musicaAtual?.name === n) {
                   const index = musicas.findIndex(m => m.name === n);
-                  // 2. Se houver uma próxima, toca ela. Se não, para o player.
                   if (index !== -1 && index < musicas.length - 1) {
                     setMusicaAtual(musicas[index + 1]);
                   } else if (musicas.length > 1) {
-                    setMusicaAtual(musicas[0]); // Volta para a primeira se for a última da lista
+                    setMusicaAtual(musicas[0]);
                   } else {
-                    setMusicaAtual(null); // Se era a única, limpa o player
+                    setMusicaAtual(null);
                   }
                 }
-
-                // 3. Deleta do banco e da lista
                 await deletarDoDB(n);
                 setMusicas(p => p.filter(x => x.name !== n));
               }}
@@ -239,12 +228,11 @@ function App() {
                     setVideoAtual(null);
                   }
                 }
-
                 await deletarDoDB(n);
                 setVideos(p => p.filter(x => x.name !== n));
               }}
               videoAtivo={videoAtual}
-              onEnded={tocarProximoVideo} // Agora ele tenta tocar o próximo em vez de sumir
+              onEnded={tocarProximoVideo}
               onClearAll={() => excluirTudo('video')}
             />
           } />
@@ -262,30 +250,27 @@ function App() {
           padding: '15px',
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center', // Centraliza os blocos verticalmente
-          justifyContent: 'center', // Centraliza horizontalmente
+          alignItems: 'center',
+          justifyContent: 'center',
           gap: '10px',
           zIndex: 9999,
           boxShadow: '0 -5px 15px rgba(0,0,0,0.5)'
         }}>
-          {/* Container da linha de controles */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center', // Garante que o conteúdo interno fique no meio
+            justifyContent: 'center',
             gap: '15px',
             width: '100%',
-            maxWidth: '800px' // Aumentei um pouco para dar respiro
+            maxWidth: '800px'
           }}>
-
-            {/* Botão de Repetir */}
             <button
               onClick={() => setRepetir(!repetir)}
               style={{
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
-                fontSize: '24px', // Um pouco maior para facilitar o clique
+                fontSize: '24px',
                 color: repetir ? 'var(--primary-gold)' : '#888',
                 transition: 'all 0.3s ease',
                 display: 'flex',
@@ -296,7 +281,6 @@ function App() {
               {IconComponent("repeat", repetir ? 'var(--primary-gold)' : '#888')}
             </button>
 
-            {/* Player de Áudio */}
             <audio
               ref={audioRef}
               src={musicaAtual.url}
@@ -305,8 +289,6 @@ function App() {
               onLoadedMetadata={() => {
                 const tempoSalvo = localStorage.getItem('ultimo_progresso_tempo');
                 const nomeSalvo = localStorage.getItem('ultima_musica_nome');
-
-                // Só aplica o tempo se o nome da música atual for o mesmo nome que salvamos
                 if (tempoSalvo && nomeSalvo === musicaAtual.name && audioRef.current) {
                   audioRef.current.currentTime = parseFloat(tempoSalvo);
                 }
@@ -315,7 +297,6 @@ function App() {
             />
           </div>
 
-          {/* Informação da música atual */}
           <div style={{
             fontSize: '14px',
             color: 'var(--primary-gold)',
@@ -330,4 +311,5 @@ function App() {
     </BrowserRouter>
   )
 }
+
 export default App
