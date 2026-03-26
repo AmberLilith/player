@@ -3,21 +3,21 @@
   "name": "Meu Player de Música e Vídeo",
   "icons": [
     {
-      "src": "logo.png",
+      "src": "logo512.png", 
       "sizes": "64x64 32x32 24x24 16x16",
       "type": "image/png"
     },
     {
-      "src": "logo.png",
+      "src": "logo192.png",
       "type": "image/png",
       "sizes": "192x192",
-      "purpose": "any"
+      "purpose": "any maskable" 
     },
     {
-      "src": "logo.png",
+      "src": "logo512.png",
       "type": "image/png",
       "sizes": "512x512",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
   ],
   "start_url": ".",
