@@ -7,6 +7,15 @@
   --text-dim: #a0a0a0;
 }
 
+html, body {
+  -webkit-user-select: none; /* Safari */
+  -ms-user-select: none;     /* IE 10+ */
+  user-select: none;         /* Padrão (Chrome, Firefox, etc.) */  
+  /* Impede o menu de contexto ao segurar o toque (comum no iOS/Android) */
+  -webkit-touch-callout: none;
+  overscroll-behavior-y: none; /* Desativa pull-to-refresh em disponitivos móveis */ 
+}
+
 body {
   margin: 0;
   font-family: 'Inter', -apple-system, sans-serif;
@@ -94,4 +103,11 @@ ul {
   max-width: 600px; /* Largura máxima confortável */
   margin: 0 auto;   /* Centraliza a lista na tela */
   padding: 20px;
+}
+
+/* Garante que inputs e textareas ainda permitam digitação/seleção */
+input, textarea {
+  -webkit-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
 }
