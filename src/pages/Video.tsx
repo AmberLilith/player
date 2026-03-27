@@ -24,9 +24,9 @@ function Video({ videos, onAdd, onSelect, onRemove, onEnded, videoAtivo, onClear
         input.onchange = (e) => {
             const f = (e.target as HTMLInputElement).files;
             if (f) {
-  const soVideo = Array.from(f).filter(file => file.type.startsWith('video/'))
-  if (soVideo.length > 0) onAdd(soVideo, limpar)
-}
+                const soVideo = Array.from(f).filter(file => file.type.startsWith('video/'))
+                if (soVideo.length > 0) onAdd(soVideo, limpar)
+            }
         };
         input.click();
     }
@@ -39,30 +39,43 @@ function Video({ videos, onAdd, onSelect, onRemove, onEnded, videoAtivo, onClear
 
     return (
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-            <h1>Meus Vídeos</h1>
+            <nav style={{
+                position: 'fixed',
+                top: '50px', // <--- EXATAMENTE a altura do nav pai
+                left: 0,
+                width: '100%',
+                textAlign: 'center',
+                background: 'var(--bg-dark)', // Fundo sólido para não ver as músicas passando por trás
+                zIndex: 9999, // Um pouco menor que o pai para não dar conflito
+                padding: '10px 0',
+                boxShadow: '0 4px 10px rgba(0,0,0,0.3)' // Opcional: dá profundidade
+            }}>
+                <h1>Meus Vídeos</h1>
 
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-                <button
-                    onClick={() => handleInput(true, true)}
-                    style={{ padding: '10px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-                >
-                    📂 Abrir Pasta
-                </button>
-                <button
-                    onClick={() => handleInput(false,false)}
-                    style={{ padding: '10px', background: '#2196F3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-                >
-                    ➕ Adicionar Vídeos
-                </button>
-                {videos.length > 0 && (
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', justifyContent: 'center' }}>
                     <button
-                        onClick={onClearAll}
-                        style={{ padding: '10px', background: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                        onClick={() => handleInput(true, true)}
+                        style={{ padding: '10px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                     >
-                        🗑️ Excluir Todos
+                        📂 Abrir Pasta
                     </button>
-                )}
-            </div>
+                    <button
+                        onClick={() => handleInput(false, false)}
+                        style={{ padding: '10px', background: '#2196F3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                    >
+                        ➕ Adicionar Vídeos
+                    </button>
+                    {videos.length > 0 && (
+                        <button
+                            onClick={onClearAll}
+                            style={{ padding: '10px', background: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                        >
+                            🗑️ Excluir Todos
+                        </button>
+                    )}
+                </div>
+            </nav>
+
 
             {/* Player de vídeo (só aparece se houver um selecionado) */}
             {videoAtivo && (
@@ -74,7 +87,8 @@ function Video({ videos, onAdd, onSelect, onRemove, onEnded, videoAtivo, onClear
             {/* Estado Vazio ou Lista de Vídeos */}
             {videos.length === 0 ? (
                 <div style={{
-                    marginTop: '40px',
+                    maxWidth: '500px',
+                    margin: '200px auto 0 auto',
                     padding: '40px',
                     textAlign: 'center',
                     border: '2px dashed #333',

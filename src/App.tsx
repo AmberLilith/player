@@ -182,12 +182,24 @@ function App() {
 
   return (
     <BrowserRouter>
-      <nav style={{ padding: '15px', background: '#1a1a1a', display: 'flex', gap: '20px' }}>
+      <nav style={{ 
+    position: 'fixed', // Mantemos fixo
+    top: 0, 
+    left: 0,
+    right: 0,
+    height: '50px', // Definimos uma altura fixa para facilitar o cálculo
+    padding: '0 15px', 
+    background: '#1a1a1a', 
+    display: 'flex', 
+    alignItems: 'center',
+    gap: '20px',
+    zIndex: 10000 // Valor alto para ficar acima de tudo
+  }}>
         <NavLink to="/music" style={({ isActive }) => ({ color: isActive ? '#4CAF50' : 'white', textDecoration: 'none' })}>MÚSICA</NavLink>
         <NavLink to="/video" style={({ isActive }) => ({ color: isActive ? '#4CAF50' : 'white', textDecoration: 'none' })}>VÍDEO</NavLink>
       </nav>
 
-      <main style={{ padding: '20px', paddingBottom: '120px' }}>
+      <main style={{ padding: '20px', paddingBottom: musicaAtual ? '120px' : '0px' }}>
         <Routes>
           <Route path="/" element={<Music {...musicaProps} />} />
           <Route path="/music" element={<Music {...musicaProps} />} />

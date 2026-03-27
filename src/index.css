@@ -95,3 +95,7 @@ ul {
   margin: 0 auto;   /* Centraliza a lista na tela */
   padding: 20px;
 }
+
+[data-dnd-kit-droppable] {
+  overflow: hidden;
+}

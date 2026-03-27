@@ -2,6 +2,7 @@ import {
     closestCenter,
     DndContext,
     PointerSensor,
+    TouchSensor,
     useSensor,
     useSensors,
     type DragEndEvent
@@ -74,6 +75,7 @@ function MusicItem({ musica, ativa, onSelect, onRemove }: ItemProps) {
                 {...listeners}
                 onClick={(e) => e.stopPropagation()}  // evita tocar a música ao clicar no handle
                 style={{
+                    touchAction: 'none',
                     cursor: 'grab',
                     padding: '0 10px 0 0',
                     color: '#555',
@@ -129,6 +131,12 @@ function Music({ musicas, onAdd, onSelect, onRemove, musicaAtiva, onClearAll, on
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: { distance: 8 }
+        }),
+        useSensor(TouchSensor, {
+            activationConstraint: {
+                delay: 250,      // mobile: segura 250ms antes de ativar
+                tolerance: 5     // tolerância de 5px de movimento durante o delay
+            }
         })
     )
 
@@ -165,35 +173,46 @@ function Music({ musicas, onAdd, onSelect, onRemove, musicaAtiva, onClearAll, on
 
     return (
         <div>
-            <h1 style={{ textAlign: 'center' }}>Minhas Músicas</h1>
+             <nav style={{
+                position: 'fixed',
+                top: '50px', // <--- EXATAMENTE a altura do nav pai
+                left: 0,
+                width: '100%',
+                textAlign: 'center',
+                background: 'var(--bg-dark)', // Fundo sólido para não ver as músicas passando por trás
+                zIndex: 9999, // Um pouco menor que o pai para não dar conflito
+                padding: '10px 0'
+            }}>
+                <h1 style={{ textAlign: 'center' }}>Músicas</h1>
 
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', justifyContent: 'center' }}>
-                <button
-                    onClick={() => handleInput(true, true)}
-                    style={{ padding: '10px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-                >
-                    📂 Abrir Pasta
-                </button>
-                <button
-                    onClick={() => handleInput(false, false)}
-                    style={{ padding: '10px', background: '#2196F3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-                >
-                    ➕ Adicionar à Playlist
-                </button>
-                {musicas.length > 0 && (
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', justifyContent: 'center' }}>
                     <button
-                        onClick={onClearAll}
-                        style={{ padding: '10px', background: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                        onClick={() => handleInput(true, true)}
+                        style={{ padding: '10px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                     >
-                        🗑️ Limpar Biblioteca
+                        📂 Abrir Pasta
                     </button>
-                )}
-            </div>
+                    <button
+                        onClick={() => handleInput(false, false)}
+                        style={{ padding: '10px', background: '#2196F3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                    >
+                        ➕ Adicionar à Playlist
+                    </button>
+                    {musicas.length > 0 && (
+                        <button
+                            onClick={onClearAll}
+                            style={{ padding: '10px', background: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                        >
+                            🗑️ Limpar Biblioteca
+                        </button>
+                    )}
+                </div>
+            </nav>
 
             {musicas.length === 0 ? (
                 <div style={{
                     maxWidth: '500px',
-                    margin: '40px auto 0 auto',
+                    margin: '200px auto 0 auto',
                     padding: '40px',
                     textAlign: 'center',
                     border: '2px dashed #333',
@@ -217,7 +236,7 @@ function Music({ musicas, onAdd, onSelect, onRemove, musicaAtiva, onClearAll, on
                         items={musicas.map(m => m.name)}
                         strategy={verticalListSortingStrategy}
                     >
-                        <ul style={{ listStyle: 'none', padding: 0, marginTop: '20px' }}>
+                        <ul style={{ listStyle: 'none', padding: 0, marginTop: '200px', overflow: 'hidden' }}>
                             {musicas.map((m) => (
                                 <MusicItem
                                     key={m.name}
