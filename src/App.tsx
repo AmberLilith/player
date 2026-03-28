@@ -159,7 +159,7 @@ function App() {
         <NavLink to="/video" style={({ isActive }) => ({ color: isActive ? '#4CAF50' : 'white', textDecoration: 'none' })}>VÍDEO</NavLink>
       </nav>
 
-      <main style={{ padding: '20px', paddingBottom: musicaAtual ? '140px' : '0px' }}>
+      <main style={{padding: '20px', paddingBottom: musicaAtual ? '140px' : '0px' }}>
         <Routes>
           <Route path="/" element={<Music {...musicaProps} />} />
           <Route path="/music" element={<Music {...musicaProps} />} />

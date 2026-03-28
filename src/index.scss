@@ -22,11 +22,20 @@ body {
 }
 
 body {
-  margin: 0;
   font-family: 'Inter', -apple-system, sans-serif;
-  background-color: var(--bg-dark);
   color: var(--text-main);
   -webkit-font-smoothing: antialiased;
+  background-image: url('/body-bg.png');
+  background-size: cover; 
+
+  /* 3. Evita que a imagem se repita (mosaico) */
+  background-repeat: no-repeat; 
+
+  /* 4. Centraliza a imagem (para não cortar o lado errado) */
+  background-position: center center; 
+
+  /* Opcional: Mantém o fundo fixo enquanto o conteúdo rola */
+  background-attachment: fixed; 
 }
 
 /* Scrollbar Customizada */
@@ -73,7 +82,6 @@ button:hover {
 /* Estilo dos Cards de Mídia */
 li,
 .video-card {
-  background: var(--bg-card) !important;
   border: 1px solid #222 !important;
   color: var(--text-main) !important;
   transition: border-color 0.3s;
@@ -108,7 +116,9 @@ h1 {
 }
 
 main {
-  background-color: var(--bg-dark);
+  background-color: transparent;
+
+  color: var(--text-main);
   min-height: 100vh;
 }
 
@@ -137,7 +147,7 @@ textarea {
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.193);
+  background: rgba(255, 255, 255, 0.3);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   /* For Safari support */

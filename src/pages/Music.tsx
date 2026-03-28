@@ -60,10 +60,10 @@ function MusicItem({ musica, ativa, onSelect, onRemove }: ItemProps) {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                padding: '12px 15px',
+                padding: '12px 12px',
                 marginBottom: '8px',
                 borderRadius: '6px',
-                background: 'var(--bg-card)',
+                background: 'rgba(22,22,24, 0.7)',
                 cursor: 'pointer',
                 border: ativa ? '1px solid var(--primary-gold)' : '1px solid #222',
                 transition: 'all 0.2s ease',
@@ -215,14 +215,13 @@ function Music({ musicas, onAdd, onSelect, onRemove, musicaAtiva, onClearAll, on
 
 
             {musicas.length === 0 ? (
-                <div style={{
+                <div className='glass-card' style={{
                     maxWidth: '500px',
                     margin: '200px auto 0 auto',
                     padding: '40px',
                     textAlign: 'center',
-                    border: '2px dashed #333',
                     borderRadius: '12px',
-                    color: 'var(--text-dim)'
+                    color: 'white'
                 }}>
                     <span style={{ fontSize: '48px', display: 'block', marginBottom: '10px' }}>🎧</span>
                     <h2 style={{ color: 'var(--primary-gold)' }}>Sua biblioteca está vazia</h2>
@@ -241,7 +240,7 @@ function Music({ musicas, onAdd, onSelect, onRemove, musicaAtiva, onClearAll, on
                         items={musicas.map(m => m.name)}
                         strategy={verticalListSortingStrategy}
                     >
-                        <ul style={{ listStyle: 'none', padding: 0, marginTop: '200px', overflow: 'hidden' }}>
+                        <ul style={{ listStyle: 'none', padding: 0, marginTop: '60px', overflow: 'hidden' }}>
                             {musicas.map((m) => (
                                 <MusicItem
                                     key={m.name}
