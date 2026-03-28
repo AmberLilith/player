@@ -15,6 +15,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { MediaFile } from '../App'
+import IconComponent from '../components/icons'
 
 interface MusicProps {
     musicas: MediaFile[]
@@ -67,13 +68,14 @@ function MusicItem({ musica, ativa, onSelect, onRemove }: ItemProps) {
                 border: ativa ? '1px solid var(--primary-gold)' : '1px solid #222',
                 transition: 'all 0.2s ease',
             }}
+
             onClick={() => onSelect(musica)}
         >
             {/* Ícone de drag — só essa área aciona o drag */}
             <span
                 {...attributes}
                 {...listeners}
-                onClick={(e) => e.stopPropagation()}  // evita tocar a música ao clicar no handle
+                onClick={(e) => e.stopPropagation()}
                 style={{
                     touchAction: 'none',
                     cursor: 'grab',
@@ -118,7 +120,7 @@ function MusicItem({ musica, ativa, onSelect, onRemove }: ItemProps) {
                     flexShrink: 0,
                 }}
             >
-                🗑️
+                {IconComponent("trash", 'var(--primary-gold)', null, null)}
             </button>
         </li>
     )
@@ -172,42 +174,45 @@ function Music({ musicas, onAdd, onSelect, onRemove, musicaAtiva, onClearAll, on
     }
 
     return (
-        <div>
-             <nav style={{
+        <div >
+            <div style={{
                 position: 'fixed',
+                display: 'flex',
+                justifyContent: 'end', 
                 top: '50px', // <--- EXATAMENTE a altura do nav pai
                 left: 0,
                 width: '100%',
                 textAlign: 'center',
-                background: 'var(--bg-dark)', // Fundo sólido para não ver as músicas passando por trás
-                zIndex: 9999, // Um pouco menor que o pai para não dar conflito
+                zIndex: 9999, // Um pouco menor que o nav de app.tsx para não dar conflito
                 padding: '10px 0'
             }}>
-                <h1 style={{ textAlign: 'center' }}>Músicas</h1>
+                <nav className='glass-card' style={{ display: "flex", justifyContent: "center", marginRight: '10px'}} >
 
-                <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', justifyContent: 'center' }}>
-                    <button
-                        onClick={() => handleInput(true, true)}
-                        style={{ padding: '10px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-                    >
-                        📂 Abrir Pasta
-                    </button>
-                    <button
-                        onClick={() => handleInput(false, false)}
-                        style={{ padding: '10px', background: '#2196F3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-                    >
-                        ➕ Adicionar à Playlist
-                    </button>
-                    {musicas.length > 0 && (
+                    <div style={{ display: 'flex', gap: '5px', justifyContent: 'center', flexWrap: 'wrap' }}>
                         <button
-                            onClick={onClearAll}
-                            style={{ padding: '10px', background: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                            onClick={() => handleInput(true, true)}
+                            style={{ padding: '10px', background: 'transparent', color: 'white', border: 'none', cursor: 'pointer' }}
                         >
-                            🗑️ Limpar Biblioteca
+                            {IconComponent("add_playlist", 'var(--primary-gold)', null, null)}
                         </button>
-                    )}
-                </div>
-            </nav>
+                        <button
+                            onClick={() => handleInput(false, false)}
+                            style={{ padding: '10px', background: 'transparent', color: 'white', border: 'none',  cursor: 'pointer' }}
+                        >
+                            {IconComponent("add_music", 'var(--primary-gold)', null, null)}
+                        </button>
+                        {musicas.length > 0 && (
+                            <button
+                                onClick={onClearAll}
+                                style={{ padding: '10px', background: 'transparent', color: 'white', border: 'none',  cursor: 'pointer' }}
+                            >
+                                {IconComponent("remove_playlist", 'var(--primary-gold)', null, null)}
+                            </button>
+                        )}
+                    </div>
+                </nav>
+            </div>
+
 
             {musicas.length === 0 ? (
                 <div style={{
