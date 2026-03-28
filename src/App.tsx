@@ -62,8 +62,29 @@ function App() {
           setMusicaAtual(encontrada);
         }
       }
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('refresh') === 'true') {
+        // Se acabou de chegar um arquivo, pega o último da lista e dá play!
+        const ultima = mTemp[mTemp.length - 1];
+        if (ultima) setMusicaAtual(ultima);
+
+        // Limpa a URL para não ficar dando refresh infinito
+        window.history.replaceState({}, '', window.location.pathname);
+      }
     };
     carregar();
+  }, []);
+
+  useEffect(() => {
+    // Service Workers ou a própria rota podem interceptar isso
+    const handleShare = async () => {
+      const url = new URL(window.location.href);
+      if (url.pathname === '/share-target') {
+        // Aqui entra a lógica para pegar o blob do 'media' 
+        // e usar sua função adicionarMedia()
+      }
+    };
+    handleShare();
   }, []);
 
   useEffect(() => {
@@ -159,7 +180,7 @@ function App() {
         <NavLink to="/video" style={({ isActive }) => ({ color: isActive ? '#4CAF50' : 'white', textDecoration: 'none' })}>VÍDEO</NavLink>
       </nav>
 
-      <main style={{padding: '20px', paddingBottom: musicaAtual ? '140px' : '0px' }}>
+      <main style={{ paddingBottom: musicaAtual ? '140px' : '0px' }}>
         <Routes>
           <Route path="/" element={<Music {...musicaProps} />} />
           <Route path="/music" element={<Music {...musicaProps} />} />
@@ -188,18 +209,26 @@ function App() {
       </main>
 
       {musicaAtual && (
-        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, display: 'flex', justifyContent: 'center', padding: '10px', zIndex: 9999 }}>
-          <div className='glass-card' style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '15px', width: '95%', maxWidth: '700px', gap: '10px' }}>
-
-            {/* Div Esquerda (Playlist Controls) */}
-            <div style={{ position: 'absolute', left: '15px', top: '15px', display: 'flex', gap: '5px' }}>
-              <button onClick={() => setRepetir(!repetir)} className='playerButton' title="Repetir">
-                {IconComponent("repeat", repetir ? 'var(--primary-gold)' : '#888', null, null)}
+        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '10px', zIndex: 9999 }}>
+          <div style={{ //Essa div existe apenas para manter os botoes de suffle e repeat alinhados a esquerda
+            display: 'flex',
+            marginBottom: '5px',
+            opacity: 0.8,
+            width: '95%',
+            maxWidth: '700px',
+            justifyContent: 'flex-start'
+          }}>
+            <div className='glass-card' style={{ display: 'flex', flexDirection: 'row', gap: '20px', marginLeft: '0px', padding: '5px' }}>
+              <button onClick={() => setRepetir(!repetir)} className='' style={{ width: '30px', height: '30px' }}>
+                {IconComponent("repeat", repetir ? 'var(--primary-gold)' : '#888', '18px', '18px')}
               </button>
-              <button onClick={() => setMusicas([...musicas].sort(() => Math.random() - 0.5))} className='playerButton' title="Embaralhar">
-                {IconComponent("suffle", 'var(--primary-gold)', null, null)}
+              <button className='playerButton' style={{ width: '30px', height: '30px' }}>
+                {IconComponent("suffle", 'var(--primary-gold)', '18px', '18px')}
               </button>
             </div>
+          </div>
+          <div className='glass-card' style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '15px', width: '95%', maxWidth: '700px' }}>
+
 
             {/* Div Central (Playback Controls) */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginTop: '5px' }}>
@@ -267,21 +296,16 @@ function App() {
 
             {/* Marquee Info */}
             <div style={{
-              fontSize: '14px',
-              color: 'var(--primary-gold)',
+              fontSize: '10px',
+              color: 'var(--primary-main)',
+              fontWeight: 'bold',
               textAlign: 'center',
               width: '100%',
               maxWidth: '500px',
-              boxShadow: '2px -3px 10px 10px rgba(0, 0, 0, 0.25)'
 
             }}>
               <div className="marquee">
-                <div className="marquee_blur" aria-hidden="true">
-                  <p className="marquee_text">{musicaAtual.name}</p>
-                </div>
-                <div className="marquee_clear">
-                  <p className="marquee_text">{musicaAtual.name}</p>
-                </div>
+                <p className="marquee_text">{musicaAtual.name}</p>
               </div>
             </div>
 

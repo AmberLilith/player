@@ -68,9 +68,13 @@ button {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
+  background-color: transparent;
+  border: none;
+  display: 'flex';
+  align-items: 'center';
   width: 50px;
   height: 50px;
-  border-radius: 50%;
+  border-radius: 30%;
 }
 
 button:hover {
@@ -186,40 +190,17 @@ textarea {
     position: absolute;
     min-width: 100%;
     white-space: nowrap;
-    animation: marquee 16s infinite linear;
+    animation: marquee 10s infinite linear;
 
     @keyframes marquee {
       from {
-        translate: 70%;
+        translate: 100%;
       }
 
       to {
-        translate: -70%;
+        translate: -100%;
       }
     }
-  }
-
-  &_blur {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    background-color: rgb(56, 55, 55);
-    background-image:
-      linear-gradient(to right, var(--primary-gold), 1rem, transparent 50%),
-      linear-gradient(to left, var(--primary-gold), 1rem, transparent 50%);
-    filter: contrast(15);
-
-    p {
-      filter: blur(0.04em);
-    }
-  }
-
-  &_clear {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
   }
 }
 

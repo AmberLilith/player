@@ -188,23 +188,23 @@ function Music({ musicas, onAdd, onSelect, onRemove, musicaAtiva, onClearAll, on
             }}>
                 <nav className='glass-card' style={{ display: "flex", justifyContent: "center", marginRight: '10px'}} >
 
-                    <div style={{ display: 'flex', gap: '5px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', padding: '5px' }}>
                         <button
                             onClick={() => handleInput(true, true)}
-                            style={{ padding: '10px', background: 'transparent', color: 'white', border: 'none', cursor: 'pointer' }}
+                           style={{  background: 'transparent', border: 'non e', cursor: 'pointer' }}
                         >
                             {IconComponent("add_playlist", 'var(--primary-gold)', null, null)}
                         </button>
                         <button
                             onClick={() => handleInput(false, false)}
-                            style={{ padding: '10px', background: 'transparent', color: 'white', border: 'none',  cursor: 'pointer' }}
+                            style={{  background: 'transparent', border: 'none',  cursor: 'pointer' }}
                         >
                             {IconComponent("add_music", 'var(--primary-gold)', null, null)}
                         </button>
                         {musicas.length > 0 && (
                             <button
                                 onClick={onClearAll}
-                                style={{ padding: '10px', background: 'transparent', color: 'white', border: 'none',  cursor: 'pointer' }}
+                                style={{ background: 'transparent',border: 'none',  cursor: 'pointer' }}
                             >
                                 {IconComponent("remove_playlist", 'var(--primary-gold)', null, null)}
                             </button>
