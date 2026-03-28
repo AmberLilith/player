@@ -1,0 +1,282 @@
+:root {
+  --bg-dark: #0a0a0b;
+  --bg-card: #161618;
+  --primary-gold: #d4af37;
+  --accent-blue: #00d2ff;
+  --text-main: #e0e0e0;
+  --text-dim: #a0a0a0;
+}
+
+html,
+body {
+  -webkit-user-select: none;
+  /* Safari */
+  -ms-user-select: none;
+  /* IE 10+ */
+  user-select: none;
+  /* Padrão (Chrome, Firefox, etc.) */
+  /* Impede o menu de contexto ao segurar o toque (comum no iOS/Android) */
+  -webkit-touch-callout: none;
+  overscroll-behavior-y: none;
+  /* Desativa pull-to-refresh em disponitivos móveis */
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar Customizada */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-gold);
+}
+
+/* Navegação */
+nav {
+  border-bottom: 1px solid #222;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Botões Estilizados */
+button {
+  transition: all 0.3s ease;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.2);
+  box-shadow: 0 0 15px var(--primary-gold);
+}
+
+/* Estilo dos Cards de Mídia */
+li,
+.video-card {
+  background: var(--bg-card) !important;
+  border: 1px solid #222 !important;
+  color: var(--text-main) !important;
+  transition: border-color 0.3s;
+}
+
+li:hover {
+  border-color: var(--accent-blue) !important;
+}
+
+/* Destaque para o que está tocando */
+.active-item {
+  border-left: 4px solid var(--primary-gold) !important;
+  background: linear-gradient(90deg, #1a1a1d, #161618) !important;
+}
+
+/* Player Fixo no Rodapé */
+.player-bar {
+  background: rgba(22, 22, 24, 0.95) !important;
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--primary-gold);
+  box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.8);
+}
+
+/* No seu arquivo index.css, adicione ou atualize: */
+
+h1 {
+  color: var(--primary-gold);
+  margin-bottom: 25px;
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+main {
+  background-color: var(--bg-dark);
+  min-height: 100vh;
+}
+
+/* Garante visibilidade dos nomes de arquivos longos */
+span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 10px;
+}
+
+ul {
+  max-width: 600px;
+  /* Largura máxima confortável */
+  margin: 0 auto;
+  /* Centraliza a lista na tela */
+  padding: 20px;
+}
+
+/* Garante que inputs e textareas ainda permitam digitação/seleção */
+input,
+textarea {
+  -webkit-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.193);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  /* For Safari support */
+  border-radius: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+}
+
+.playerButton {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 24px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  text-align: center;
+  color: var(--primary-gold);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;   
+  padding: 0;               
+}
+
+
+.marquee {
+  position: relative;
+  width: 100%;
+  height: 2em;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+
+  &_text {
+    position: absolute;
+    min-width: 100%;
+    white-space: nowrap;
+    animation: marquee 16s infinite linear;
+
+    @keyframes marquee {
+      from {
+        translate: 70%;
+      }
+
+      to {
+        translate: -70%;
+      }
+    }
+  }
+
+  &_blur {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background-color: rgb(56, 55, 55);
+    background-image:
+      linear-gradient(to right, var(--primary-gold), 1rem, transparent 50%),
+      linear-gradient(to left, var(--primary-gold), 1rem, transparent 50%);
+    filter: contrast(15);
+
+    p {
+      filter: blur(0.04em);
+    }
+  }
+
+  &_clear {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+  }
+}
+
+.text {
+  margin-block: 2em;
+}
+
+.button-play {
+  width: 60px;
+  height: 60px;
+  background-color: transparent;
+  border-radius: 50%;
+  border: none;
+  -webkit-box-shadow: 0px 0px 20px 5px var(--primary-gold);
+  box-shadow: 0 0 15px var(--primary-gold);
+  
+}
+
+.button-play:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.2);
+  box-shadow: 0px 0px 20px 5px var(--primary-gold);
+
+}
+
+/* 1. O "Trilho" (a linha onde a bolinha corre) */
+input[type="range"] {
+  -webkit-appearance: none; /* Remove o estilo padrão do browser */
+  background: transparent;
+  cursor: pointer;
+}
+
+/* Chrome, Safari, Edge e Opera */
+input[type="range"]::-webkit-slider-runnable-track {
+  background: rgba(255, 255, 255, 0.1); /* Cor do fundo da barra */
+  height: 4px; /* <--- AQUI você controla a grossura da linha! */
+  border-radius: 2px;
+}
+
+/* 2. A "Bolinha" (Thumb) */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; /* Importante para o Chrome */
+  appearance: none;
+  margin-top: -6px; /* (Track height / 2) - (Thumb height / 2) para centralizar */
+  background-color: var(--primary-gold);
+  height: 16px; /* Tamanho da bolinha */
+  width: 16px;
+  border-radius: 50%;
+}
+
+/* Firefox */
+input[type="range"]::-moz-range-track {
+  background: rgba(255, 255, 255, 0.1);
+  height: 4px;
+  border-radius: 2px;
+}
+
+input[type="range"]::-moz-range-thumb {
+  background-color: var(--primary-gold);
+  height: 16px;
+  width: 16px;
+  border: none;
+  border-radius: 50%;
+}
+
+input[type="range"]:hover::-webkit-slider-thumb {
+  box-shadow: 0 0 10px var(--primary-gold);
+  transform: scale(1.2);
+}
+
