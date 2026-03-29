@@ -12,16 +12,27 @@ export interface MediaFile {
 }
 
 function App() {
-  
   const [videos, setVideos] = useState<MediaFile[]>([])
- 
   const [videoAtual, setVideoAtual] = useState<MediaFile | null>(null)
+  
 
+  const formatarTempo = (segundos: number) => {
+    const h = Math.floor(segundos / 3600);
+    const m = Math.floor((segundos % 3600) / 60);
+    const s = Math.floor(segundos % 60);
+
+    const partes = [
+      h > 0 ? h : null, // Só adiciona hora se houver
+      m.toString().padStart(2, '0'),
+      s.toString().padStart(2, '0')
+    ].filter(Boolean); // Remove o nulo da hora se não existir
+
+    return partes.join(':');
+  };
 
   useEffect(() => {
     const carregar = async () => {
       const dados = await buscarTodosDoDB();
-      const mTemp: MediaFile[] = [];
       const vTemp: MediaFile[] = [];
 
       dados.forEach(item => {
@@ -30,29 +41,9 @@ function App() {
           url: URL.createObjectURL(item.blob),
           type: item.blob.type.includes('audio') ? 'audio' : 'video'
         };
-        file.type === 'audio' ? mTemp.push(file) : vTemp.push(file);
+        vTemp.push(file);
       });
-
-      setMusicas(mTemp);
       setVideos(vTemp);
-
-      const ultimaMusicaNome = localStorage.getItem('ultima_musica_nome');
-      if (ultimaMusicaNome) {
-        const encontrada = mTemp.find(m => m.name === ultimaMusicaNome);
-        if (encontrada) {
-          isRestoring.current = true;
-          setMusicaAtual(encontrada);
-        }
-      }
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('refresh') === 'true') {
-        // Se acabou de chegar um arquivo, pega o último da lista e dá play!
-        const ultima = mTemp[mTemp.length - 1];
-        if (ultima) setMusicaAtual(ultima);
-
-        // Limpa a URL para não ficar dando refresh infinito
-        window.history.replaceState({}, '', window.location.pathname);
-      }
     };
     carregar();
   }, []);
@@ -69,7 +60,7 @@ function App() {
     handleShare();
   }, []);
 
-  
+
 
   const adicionarMedia = async (files: File[], limparAnterior: boolean, tipo: 'audio' | 'video') => {
     if (limparAnterior) {
@@ -80,7 +71,7 @@ function App() {
           await deletarDoDB(item.name);
         }
       }
-      tipo === 'audio' ? (setMusicas([]), setMusicaAtual(null)) : (setVideos([]), setVideoAtual(null));
+      (setVideos([]), setVideoAtual(null));
     }
 
     const novasTemp: MediaFile[] = [];
@@ -93,9 +84,7 @@ function App() {
       });
     }
 
-    tipo === 'audio'
-      ? setMusicas(p => limparAnterior ? novasTemp : [...p, ...novasTemp])
-      : setVideos(p => limparAnterior ? novasTemp : [...p, ...novasTemp]);
+    setVideos(p => limparAnterior ? novasTemp : [...p, ...novasTemp]);
   };
 
   const excluirTudo = async (tipo: 'audio' | 'video') => {
@@ -105,9 +94,8 @@ function App() {
       const ehAudio = item.blob.type.includes('audio');
       if ((tipo === 'audio' && ehAudio) || (tipo === 'video' && !ehAudio)) await deletarDoDB(item.name);
     }
-    tipo === 'audio' ? (setMusicas([]), setMusicaAtual(null)) : (setVideos([]), setVideoAtual(null));
+    (setVideos([]), setVideoAtual(null));
   };
-
 
 
   return (
@@ -116,7 +104,7 @@ function App() {
         <NavLink to="/music" style={({ isActive }) => ({ borderBottom: isActive ? '2px solid var(--primary-gold)' : 'none', color: 'white', textDecoration: 'none' })}>MÚSICA</NavLink>
         <NavLink to="/video" style={({ isActive }) => ({ borderBottom: isActive ? '2px solid var(--primary-gold)' : 'none', color: 'white', textDecoration: 'none' })}>VÍDEO</NavLink>
       </nav>
-{/* style={{ paddingBottom: musicaAtual ? '140px' : '0px' }}> */}
+
       <main>
         <Routes>
           <Route path="/" element={<Music/>} />
@@ -144,8 +132,6 @@ function App() {
           } />
         </Routes>
       </main>
-
-      
 
     </BrowserRouter>
   )
