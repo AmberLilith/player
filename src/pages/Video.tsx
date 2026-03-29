@@ -1,5 +1,6 @@
 import { useRef, useEffect } from 'react'
 import type { MediaFile } from '../App'
+import IconComponent from '../components/icons'
 
 interface VideoProps {
     videos: MediaFile[]
@@ -44,33 +45,35 @@ function Video({ videos, onAdd, onSelect, onRemove, onEnded, videoAtivo, onClear
                 top: '50px', // <--- EXATAMENTE a altura do nav pai
                 left: 0,
                 width: '100%',
+                display: 'flex',
+                justifyContent: 'flex-end',
                 textAlign: 'center',
-                background: 'var(--bg-dark)', // Fundo sólido para não ver as músicas passando por trás
+                background: 'transparent', // Fundo sólido para não ver as músicas passando por trás
                 zIndex: 9999, // Um pouco menor que o pai para não dar conflito
                 padding: '10px 0',
-                boxShadow: '0 4px 10px rgba(0,0,0,0.3)' // Opcional: dá profundidade
+                border: 'none',
+                boxShadow: 'none'
             }}>
-                <h1>Meus Vídeos</h1>
 
-                <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', justifyContent: 'center' }}>
+                <div className='glass-card' style={{ display: 'flex', gap: '10px', marginBottom: '20px', justifyContent: 'center', marginRight: '10px' }}>
                     <button
                         onClick={() => handleInput(true, true)}
-                        style={{ padding: '10px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                        style={{}}
                     >
-                        📂 Abrir Pasta
+                        {IconComponent("add_playlist", 'var(--primary-gold)', null, null)}
                     </button>
                     <button
                         onClick={() => handleInput(false, false)}
-                        style={{ padding: '10px', background: '#2196F3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                        style={{}}
                     >
-                        ➕ Adicionar Vídeos
+                        {IconComponent("add_video", 'var(--primary-gold)', null, null)}
                     </button>
                     {videos.length > 0 && (
                         <button
                             onClick={onClearAll}
-                            style={{ padding: '10px', background: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                            style={{}}
                         >
-                            🗑️ Excluir Todos
+                            {IconComponent("remove_playlist", 'var(--primary-gold)', null, null)}
                         </button>
                     )}
                 </div>
@@ -88,7 +91,7 @@ function Video({ videos, onAdd, onSelect, onRemove, onEnded, videoAtivo, onClear
             {videos.length === 0 ? (
                 <div style={{
                     maxWidth: '500px',
-                    margin: '200px auto 0 auto',
+                    margin: '100px auto 0 auto',
                     padding: '40px',
                     textAlign: 'center',
                     border: '2px dashed #333',
@@ -100,7 +103,12 @@ function Video({ videos, onAdd, onSelect, onRemove, onEnded, videoAtivo, onClear
                     <p>Selecione seus arquivos de vídeo para começar.</p>
                 </div>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px' }}>
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                    gap: '15px',
+                    margin: '100px auto 0 auto',
+                }}>
                     {videos.map((v) => (
                         <div
                             key={v.name}
@@ -114,13 +122,18 @@ function Video({ videos, onAdd, onSelect, onRemove, onEnded, videoAtivo, onClear
                                 cursor: 'pointer'
                             }}
                         >
-                            <div style={{ color: videoAtivo?.name === v.name ? 'var(--primary-gold)' : 'var(--text-main)' }}>🎬 {v.name}</div>
+                            <div style={{
+                                color: videoAtivo?.name === v.name ? 'var(--primary-gold)' : 'var(--text-main)',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                            }}>🎬 {v.name}</div>
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     onRemove(v.name);
                                 }}
-                                style={{ position: 'absolute', top: '5px', right: '5px', color: '#ff4444', border: 'none', background: 'none', cursor: 'pointer' }}
+                                style={{ position: 'absolute', top: '-10px', right: '5px', color: '#ff4444', border: 'none', background: 'none', cursor: 'pointer' }}
                             >
                                 ✕
                             </button>

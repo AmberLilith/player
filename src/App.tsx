@@ -176,8 +176,8 @@ function App() {
   return (
     <BrowserRouter>
       <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, height: '50px', padding: '0 15px', background: '#1a1a1a', display: 'flex', alignItems: 'center', gap: '20px', zIndex: 10000 }}>
-        <NavLink to="/music" style={({ isActive }) => ({ color: isActive ? '#4CAF50' : 'white', textDecoration: 'none' })}>MÚSICA</NavLink>
-        <NavLink to="/video" style={({ isActive }) => ({ color: isActive ? '#4CAF50' : 'white', textDecoration: 'none' })}>VÍDEO</NavLink>
+        <NavLink to="/music" style={({ isActive }) => ({ borderBottom: isActive ? '2px solid var(--primary-gold)' : 'none', color: 'white', textDecoration: 'none' })}>MÚSICA</NavLink>
+        <NavLink to="/video" style={({ isActive }) => ({ borderBottom: isActive ? '2px solid var(--primary-gold)' : 'none', color: 'white', textDecoration: 'none' })}>VÍDEO</NavLink>
       </nav>
 
       <main style={{ paddingBottom: musicaAtual ? '140px' : '0px' }}>
