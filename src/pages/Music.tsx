@@ -430,7 +430,8 @@ function Music() {
                             alignItems: 'center',
                             gap: '10px',
                             color: 'var(--primary-gold)',
-                            fontSize: '12px'
+                            fontSize: '12px',
+                            marginTop: '10px'
                         }}>
                             {/* Tempo Atual Formatado */}
                             <span>{formatarTempo(tempoAtual)}</span>

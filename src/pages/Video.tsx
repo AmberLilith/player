@@ -1,6 +1,7 @@
 import { useRef, useEffect } from 'react'
 import type { MediaFile } from '../App'
 import IconComponent from '../components/icons'
+import './video.scss'
 
 interface VideoProps {
     videos: MediaFile[]
@@ -82,7 +83,7 @@ function Video({ videos, onAdd, onSelect, onRemove, onEnded, videoAtivo, onClear
 
             {/* Player de vídeo (só aparece se houver um selecionado) */}
             {videoAtivo && (
-                <div style={{ background: '#000', borderRadius: '8px', overflow: 'hidden', marginBottom: '20px' }}>
+                <div style={{ background: '#000', borderRadius: '8px', overflow: 'hidden', marginBottom: '20px', marginTop: '120px'  }}>
                     <video ref={videoRef} src={videoAtivo.url} controls onEnded={onEnded} style={{ width: '100%', maxHeight: '450px' }} />
                 </div>
             )}
@@ -107,14 +108,13 @@ function Video({ videos, onAdd, onSelect, onRemove, onEnded, videoAtivo, onClear
                     display: 'grid',
                     gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
                     gap: '15px',
-                    margin: '100px auto 0 auto',
+                    margin: '140px auto 0 auto',
                 }}>
                     {videos.map((v) => (
                         <div
                             key={v.name}
                             onClick={() => onSelect(v)}
                             style={{
-                                position: 'relative',
                                 border: videoAtivo?.name === v.name ? '2px solid var(--primary-gold)' : '1px solid #222',
                                 padding: '10px',
                                 borderRadius: '5px',
@@ -123,20 +123,40 @@ function Video({ videos, onAdd, onSelect, onRemove, onEnded, videoAtivo, onClear
                             }}
                         >
                             <div style={{
+                                display: 'flex',
+                                flexDirection: 'row',
+                                alignItems: 'center', // Alinha verticalmente o nome e o X
+                                justifyContent: 'space-between',
                                 color: videoAtivo?.name === v.name ? 'var(--primary-gold)' : 'var(--text-main)',
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                            }}>🎬 {v.name}</div>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onRemove(v.name);
-                                }}
-                                style={{ position: 'absolute', top: '-10px', right: '5px', color: '#ff4444', border: 'none', background: 'none', cursor: 'pointer' }}
-                            >
-                                ✕
-                            </button>
+
+                            }}>
+                                <span
+                                    style={{
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        flex: 1, // Faz o span ocupar o espaço disponível e respeitar o ellipsis
+                                        minWidth: 0
+                                    }}>
+                                    🎬 {v.name}
+                                </span>
+
+                                <span
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onRemove(v.name);
+                                    }}
+                                    className='close'
+                                    style={{
+                                        flexShrink: 0, // Garante que o X nunca seja esmagado
+                                        fontSize: '14px',
+                                        padding: '2px 5px'
+                                    }}
+                                >
+                                    ✕
+                                </span>
+                            </div>
+
                         </div>
                     ))}
                 </div>

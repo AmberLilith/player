@@ -3,7 +3,6 @@ import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom'
 import { buscarTodosDoDB, deletarDoDB, salvarNoDB } from './db'
 import Music from './pages/Music'
 import Video from './pages/Video'
-import IconComponent from './components/icons'
 
 export interface MediaFile {
   name: string
@@ -14,21 +13,7 @@ export interface MediaFile {
 function App() {
   const [videos, setVideos] = useState<MediaFile[]>([])
   const [videoAtual, setVideoAtual] = useState<MediaFile | null>(null)
-  
 
-  const formatarTempo = (segundos: number) => {
-    const h = Math.floor(segundos / 3600);
-    const m = Math.floor((segundos % 3600) / 60);
-    const s = Math.floor(segundos % 60);
-
-    const partes = [
-      h > 0 ? h : null, // Só adiciona hora se houver
-      m.toString().padStart(2, '0'),
-      s.toString().padStart(2, '0')
-    ].filter(Boolean); // Remove o nulo da hora se não existir
-
-    return partes.join(':');
-  };
 
   useEffect(() => {
     const carregar = async () => {
