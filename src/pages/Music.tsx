@@ -16,16 +16,9 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import type { MediaFile } from '../App'
 import IconComponent from '../components/icons'
+import { useEffect, useRef, useState } from 'react'
+import { buscarTodosDoDB, deletarDoDB, salvarNoDB } from '../db'
 
-interface MusicProps {
-    musicas: MediaFile[]
-    onAdd: (f: File[], l: boolean) => void
-    onSelect: (m: MediaFile) => void
-    onRemove: (n: string) => void
-    musicaAtiva: MediaFile | null
-    onClearAll: () => void
-    onReorder: (novaOrdem: MediaFile[]) => void  // nova prop
-}
 
 // Componente separado para cada item da lista — necessário para o useSortable
 interface ItemProps {
@@ -60,10 +53,10 @@ function MusicItem({ musica, ativa, onSelect, onRemove }: ItemProps) {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                padding: '12px 15px',
+                padding: '12px 12px',
                 marginBottom: '8px',
                 borderRadius: '6px',
-                background: 'var(--bg-card)',
+                background: 'rgba(22,22,24, 0.7)',
                 cursor: 'pointer',
                 border: ativa ? '1px solid var(--primary-gold)' : '1px solid #222',
                 transition: 'all 0.2s ease',
@@ -126,7 +119,137 @@ function MusicItem({ musica, ativa, onSelect, onRemove }: ItemProps) {
     )
 }
 
-function Music({ musicas, onAdd, onSelect, onRemove, musicaAtiva, onClearAll, onReorder }: MusicProps) {
+function Music() {
+
+    const [musicas, setMusicas] = useState<MediaFile[]>([]);
+    const [musicaAtual, setMusicaAtual] = useState<MediaFile | null>(null);
+    const audioRef = useRef<HTMLAudioElement>(null);
+    const [repetir, setRepetir] = useState(false);
+    const isRestoring = useRef(false);
+    const [isPlaying, setIsPlaying] = useState(false)
+    const [tempoAtual, setTempoAtual] = useState(0);
+
+    const formatarTempo = (segundos: number) => {
+        const h = Math.floor(segundos / 3600);
+        const m = Math.floor((segundos % 3600) / 60);
+        const s = Math.floor(segundos % 60);
+
+        const partes = [
+            h > 0 ? h : null, // Só adiciona hora se houver
+            m.toString().padStart(2, '0'),
+            s.toString().padStart(2, '0')
+        ].filter(Boolean); // Remove o nulo da hora se não existir
+
+        return partes.join(':');
+    };
+
+    useEffect(() => {
+        const carregar = async () => {
+            const dados = await buscarTodosDoDB();
+            const mTemp: MediaFile[] = [];
+
+            dados.forEach(item => {
+                const file: MediaFile = {
+                    name: item.name,
+                    url: URL.createObjectURL(item.blob),
+                    type: 'audio'
+                };
+                mTemp.push(file);
+            });
+
+            setMusicas(mTemp);
+
+            const ultimaMusicaNome = localStorage.getItem('ultima_musica_nome');
+            if (ultimaMusicaNome) {
+                const encontrada = mTemp.find(m => m.name === ultimaMusicaNome);
+                if (encontrada) {
+                    isRestoring.current = true;
+                    setMusicaAtual(encontrada);
+                }
+            }
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('refresh') === 'true') {
+                // Se acabou de chegar um arquivo, pega o último da lista e dá play!
+                const ultima = mTemp[mTemp.length - 1];
+                if (ultima) setMusicaAtual(ultima);
+
+                // Limpa a URL para não ficar dando refresh infinito
+                window.history.replaceState({}, '', window.location.pathname);
+            }
+        };
+        carregar();
+    }, []);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (audioRef.current && musicaAtual) {
+                localStorage.setItem('ultimo_progresso_tempo', audioRef.current.currentTime.toString());
+                localStorage.setItem('ultima_musica_nome', musicaAtual.name);
+            }
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [musicaAtual]);
+
+    useEffect(() => {
+        if (audioRef.current && musicaAtual) {
+            if (isRestoring.current) {
+                isRestoring.current = false;
+                return;
+            }
+            audioRef.current.play();
+        }
+    }, [musicaAtual]);
+
+    const adicionarMedia = async (files: File[], limparAnterior: boolean, tipo: 'audio') => {
+        if (limparAnterior) {
+            const todos = await buscarTodosDoDB();
+            for (const item of todos) {
+                const ehAudio = item.blob.type.includes('audio');
+                if ((tipo === 'audio' && ehAudio)) {
+                    await deletarDoDB(item.name);
+                }
+            }
+            (setMusicas([]), setMusicaAtual(null));
+        }
+
+        const novasTemp: MediaFile[] = [];
+        for (const file of files) {
+            await salvarNoDB(file.name, file);
+            novasTemp.push({
+                name: file.name,
+                url: URL.createObjectURL(file),
+                type: 'audio'
+            });
+        }
+        setMusicas(p => limparAnterior ? novasTemp : [...p, ...novasTemp])
+    };
+
+    const excluirTudo = async (tipo: 'audio') => {
+        if (!window.confirm("Excluir todos os áudios")) return;
+        const todos = await buscarTodosDoDB();
+        for (const item of todos) {
+            const ehAudio = item.blob.type.includes('audio');
+            if ((tipo === 'audio' && ehAudio)) await deletarDoDB(item.name);
+        }
+        (setMusicas([]), setMusicaAtual(null));
+    };
+
+    const navegarMusica = (direcao: number) => {
+        if (!musicaAtual) return;
+        const index = musicas.findIndex(v => v.name === musicaAtual.name);
+        const novoIndex = index + direcao;
+        if (novoIndex >= 0 && novoIndex < musicas.length) setMusicaAtual(musicas[novoIndex]);
+    };
+
+    const lidarComFimDaMusica = () => {
+        const indexAtual = musicas.findIndex(m => m.name === musicaAtual?.name);
+        const ehUltima = indexAtual === musicas.length - 1;
+        let proxima = (!ehUltima) ? musicas[indexAtual + 1] : (repetir ? musicas[0] : null);
+
+        if (proxima) setMusicaAtual(proxima);
+    };
+
+
 
     // PointerSensor funciona para mouse e touch
     // A distância mínima de 8px evita acionar drag em cliques normais
@@ -153,7 +276,7 @@ function Music({ musicas, onAdd, onSelect, onRemove, musicaAtiva, onClearAll, on
             const f = (e.target as HTMLInputElement).files
             if (f) {
                 const soAudio = Array.from(f).filter(file => file.type.startsWith('audio/'))
-                if (soAudio.length > 0) onAdd(soAudio, limpar)
+                if (soAudio.length > 0) adicionarMedia(soAudio, limpar, 'audio');
             }
         }
         input.click()
@@ -170,7 +293,7 @@ function Music({ musicas, onAdd, onSelect, onRemove, musicaAtiva, onClearAll, on
 
         // arrayMove reorganiza o array mantendo todos os itens
         // O estado do áudio no App.tsx não é tocado — só a ordem muda
-        onReorder(arrayMove(musicas, oldIndex, newIndex))
+        setMusicas(arrayMove(musicas, oldIndex, newIndex))
     }
 
     return (
@@ -178,33 +301,32 @@ function Music({ musicas, onAdd, onSelect, onRemove, musicaAtiva, onClearAll, on
             <div style={{
                 position: 'fixed',
                 display: 'flex',
-                justifyContent: 'end', 
-                top: '50px', // <--- EXATAMENTE a altura do nav pai
+                justifyContent: 'end',
+                top: '50px',
                 left: 0,
                 width: '100%',
                 textAlign: 'center',
-                zIndex: 9999, // Um pouco menor que o nav de app.tsx para não dar conflito
                 padding: '10px 0'
             }}>
-                <nav className='glass-card' style={{ display: "flex", justifyContent: "center", marginRight: '10px'}} >
+                <nav className='glass-card' style={{ display: "flex", justifyContent: "center", marginRight: '10px' }} >
 
-                    <div style={{ display: 'flex', gap: '5px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', padding: '5px' }}>
                         <button
                             onClick={() => handleInput(true, true)}
-                            style={{ padding: '10px', background: 'transparent', color: 'white', border: 'none', cursor: 'pointer' }}
+                            style={{ background: 'transparent', border: 'non e', cursor: 'pointer' }}
                         >
                             {IconComponent("add_playlist", 'var(--primary-gold)', null, null)}
                         </button>
                         <button
                             onClick={() => handleInput(false, false)}
-                            style={{ padding: '10px', background: 'transparent', color: 'white', border: 'none',  cursor: 'pointer' }}
+                            style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
                         >
                             {IconComponent("add_music", 'var(--primary-gold)', null, null)}
                         </button>
                         {musicas.length > 0 && (
                             <button
-                                onClick={onClearAll}
-                                style={{ padding: '10px', background: 'transparent', color: 'white', border: 'none',  cursor: 'pointer' }}
+                                onClick={() => excluirTudo('audio')}
+                                style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
                             >
                                 {IconComponent("remove_playlist", 'var(--primary-gold)', null, null)}
                             </button>
@@ -215,14 +337,13 @@ function Music({ musicas, onAdd, onSelect, onRemove, musicaAtiva, onClearAll, on
 
 
             {musicas.length === 0 ? (
-                <div style={{
+                <div className='glass-card' style={{
                     maxWidth: '500px',
                     margin: '200px auto 0 auto',
                     padding: '40px',
                     textAlign: 'center',
-                    border: '2px dashed #333',
                     borderRadius: '12px',
-                    color: 'var(--text-dim)'
+                    color: 'white'                    
                 }}>
                     <span style={{ fontSize: '48px', display: 'block', marginBottom: '10px' }}>🎧</span>
                     <h2 style={{ color: 'var(--primary-gold)' }}>Sua biblioteca está vazia</h2>
@@ -241,19 +362,129 @@ function Music({ musicas, onAdd, onSelect, onRemove, musicaAtiva, onClearAll, on
                         items={musicas.map(m => m.name)}
                         strategy={verticalListSortingStrategy}
                     >
-                        <ul style={{ listStyle: 'none', padding: 0, marginTop: '200px', overflow: 'hidden' }}>
+                        <ul style={{ listStyle: 'none', padding: 0, marginTop: '120px',paddingBottom: musicaAtual ? '140px' : '0px', overflow: 'hidden',zIndex: 9999}}>
                             {musicas.map((m) => (
                                 <MusicItem
                                     key={m.name}
                                     musica={m}
-                                    ativa={musicaAtiva?.name === m.name}
-                                    onSelect={onSelect}
-                                    onRemove={onRemove}
+                                    ativa={musicaAtual?.name === m.name}
+                                    onSelect={(m: MediaFile) => { setMusicaAtual(m); }}
+                                    onRemove={async (n: string) => {
+                                        if (musicaAtual?.name === n) navegarMusica(1);
+                                        await deletarDoDB(n);
+                                        setMusicas(p => p.filter(x => x.name !== n));
+                                    }}
                                 />
                             ))}
                         </ul>
                     </SortableContext>
                 </DndContext>
+            )}
+
+            {musicaAtual && (
+                <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '10px', zIndex: 9998 }}>
+                    <div style={{ //Essa div existe apenas para manter os botoes de suffle e repeat alinhados a esquerda
+                        display: 'flex',
+                        marginBottom: '5px',
+                        opacity: 0.8,
+                        width: '95%',
+                        maxWidth: '700px',
+                        justifyContent: 'flex-start'
+                    }}>
+                        <div className='glass-card' style={{ display: 'flex', flexDirection: 'row', gap: '20px', marginLeft: '0px', padding: '5px' }}>
+                            <button onClick={() => setRepetir(!repetir)} className='' style={{ width: '30px', height: '30px' }}>
+                                {IconComponent("repeat", repetir ? 'var(--primary-gold)' : '#888', '18px', '18px')}
+                            </button>
+                            <button className='playerButton' style={{ width: '30px', height: '30px' }}>
+                                {IconComponent("suffle", 'var(--primary-gold)', '18px', '18px')}
+                            </button>
+                        </div>
+                    </div>
+                    <div className='glass-card' style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '15px', width: '95%', maxWidth: '700px' }}>
+
+
+                        {/* Div Central (Playback Controls) */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginTop: '5px' }}>
+                            <button className='playerButton' onClick={() => navegarMusica(-1)}>
+                                {IconComponent("previous", 'var(--primary-gold)', null, null)}
+                            </button>
+                            <button className='playerButton' onClick={() => audioRef.current!.currentTime -= 10}>
+                                {IconComponent("backwards", 'var(--primary-gold)', null, null)}
+                            </button>
+                            <button className='button-play' onClick={() => audioRef.current?.paused ? audioRef.current?.play() : audioRef.current?.pause()}>
+                                {IconComponent(isPlaying ? "pause" : "play", 'var(--primary-gold)', '48px', '48px')}
+                            </button>
+                            <button className='playerButton' onClick={() => audioRef.current!.currentTime += 10}>
+                                {IconComponent("forwards", 'var(--primary-gold)', null, null)}
+                            </button>
+                            <button className='playerButton' onClick={() => navegarMusica(1)}>
+                                {IconComponent("next", 'var(--primary-gold)', null, null)}
+                            </button>
+                        </div>
+
+                        <div style={{
+                            width: '100%',
+                            maxWidth: '500px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            color: 'var(--primary-gold)',
+                            fontSize: '12px',
+                            marginTop: '10px'
+                        }}>
+                            {/* Tempo Atual Formatado */}
+                            <span>{formatarTempo(tempoAtual)}</span>
+
+                            <input
+                                type="range"
+                                min="0"
+                                max={audioRef.current?.duration || 0}
+                                value={tempoAtual}
+                                onChange={(e) => {
+                                    const novoTempo = parseFloat(e.target.value);
+                                    audioRef.current!.currentTime = novoTempo;
+                                    setTempoAtual(novoTempo);
+                                }}
+                                style={{ flex: 1, accentColor: 'var(--primary-gold)', cursor: 'pointer' }}
+                            />
+
+                            {/* Tempo Total Formatado */}
+                            <span>{formatarTempo(audioRef.current?.duration || 0)}</span>
+                        </div>
+
+                        <audio
+                            ref={audioRef}
+                            src={musicaAtual.url}
+                            onEnded={lidarComFimDaMusica}
+                            onPlay={() => setIsPlaying(true)}
+                            onPause={() => setIsPlaying(false)}
+                            onTimeUpdate={() => setTempoAtual(audioRef.current?.currentTime || 0)}
+                            onLoadedMetadata={() => {
+                                const tempo = localStorage.getItem('ultimo_progresso_tempo');
+                                if (tempo && localStorage.getItem('ultima_musica_nome') === musicaAtual.name && audioRef.current) {
+                                    audioRef.current.currentTime = parseFloat(tempo);
+                                }
+                            }}
+                            style={{ width: '100%', maxWidth: '500px', height: '30px' }}
+                        />
+
+                        {/* Marquee Info */}
+                        <div style={{
+                            fontSize: '10px',
+                            color: 'var(--primary-main)',
+                            fontWeight: 'bold',
+                            textAlign: 'center',
+                            width: '100%',
+                            maxWidth: '500px',
+
+                        }}>
+                            <div className="marquee">
+                                <p className="marquee_text">{musicaAtual.name}</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
             )}
         </div>
     )

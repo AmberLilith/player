@@ -10,5 +10,9 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 )
 
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js');
+}
+
 // Registra o Service Worker para o PWA funcionar offline
 serviceWorkerRegistration.register();
