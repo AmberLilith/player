@@ -147,7 +147,6 @@ function Music() {
         const carregar = async () => {
             const dados = await buscarTodosDoDB();
             const mTemp: MediaFile[] = [];
-            const vTemp: MediaFile[] = [];
 
             dados.forEach(item => {
                 const file: MediaFile = {

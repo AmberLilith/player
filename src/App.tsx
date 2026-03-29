@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom'
 import { buscarTodosDoDB, deletarDoDB, salvarNoDB } from './db'
 import Music from './pages/Music'
