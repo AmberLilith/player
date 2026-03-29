@@ -12,29 +12,11 @@ export interface MediaFile {
 }
 
 function App() {
-  const [musicas, setMusicas] = useState<MediaFile[]>([])
+  
   const [videos, setVideos] = useState<MediaFile[]>([])
-  const [musicaAtual, setMusicaAtual] = useState<MediaFile | null>(null)
+ 
   const [videoAtual, setVideoAtual] = useState<MediaFile | null>(null)
-  const audioRef = useRef<HTMLAudioElement>(null)
-  const [repetir, setRepetir] = useState(false)
-  const isRestoring = useRef(false)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [tempoAtual, setTempoAtual] = useState(0);
 
-  const formatarTempo = (segundos: number) => {
-    const h = Math.floor(segundos / 3600);
-    const m = Math.floor((segundos % 3600) / 60);
-    const s = Math.floor(segundos % 60);
-
-    const partes = [
-      h > 0 ? h : null, // Só adiciona hora se houver
-      m.toString().padStart(2, '0'),
-      s.toString().padStart(2, '0')
-    ].filter(Boolean); // Remove o nulo da hora se não existir
-
-    return partes.join(':');
-  };
 
   useEffect(() => {
     const carregar = async () => {
@@ -87,25 +69,7 @@ function App() {
     handleShare();
   }, []);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (audioRef.current && musicaAtual) {
-        localStorage.setItem('ultimo_progresso_tempo', audioRef.current.currentTime.toString());
-        localStorage.setItem('ultima_musica_nome', musicaAtual.name);
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [musicaAtual]);
-
-  useEffect(() => {
-    if (audioRef.current && musicaAtual) {
-      if (isRestoring.current) {
-        isRestoring.current = false;
-        return;
-      }
-      audioRef.current.play();
-    }
-  }, [musicaAtual]);
+  
 
   const adicionarMedia = async (files: File[], limparAnterior: boolean, tipo: 'audio' | 'video') => {
     if (limparAnterior) {
@@ -144,34 +108,7 @@ function App() {
     tipo === 'audio' ? (setMusicas([]), setMusicaAtual(null)) : (setVideos([]), setVideoAtual(null));
   };
 
-  const navegarMusica = (direcao: number) => {
-    if (!musicaAtual) return;
-    const index = musicas.findIndex(v => v.name === musicaAtual.name);
-    const novoIndex = index + direcao;
-    if (novoIndex >= 0 && novoIndex < musicas.length) setMusicaAtual(musicas[novoIndex]);
-  };
 
-  const lidarComFimDaMusica = () => {
-    const indexAtual = musicas.findIndex(m => m.name === musicaAtual?.name);
-    const ehUltima = indexAtual === musicas.length - 1;
-    let proxima = (!ehUltima) ? musicas[indexAtual + 1] : (repetir ? musicas[0] : null);
-
-    if (proxima) setMusicaAtual(proxima);
-  };
-
-  const musicaProps = {
-    musicas,
-    onAdd: (f: File[], l: boolean) => adicionarMedia(f, l, 'audio'),
-    onSelect: (m: MediaFile) => { setVideoAtual(null); setMusicaAtual(m); },
-    onRemove: async (n: string) => {
-      if (musicaAtual?.name === n) navegarMusica(1);
-      await deletarDoDB(n);
-      setMusicas(p => p.filter(x => x.name !== n));
-    },
-    musicaAtiva: musicaAtual,
-    onClearAll: () => excluirTudo('audio'),
-    onReorder: setMusicas,
-  };
 
   return (
     <BrowserRouter>
@@ -179,16 +116,16 @@ function App() {
         <NavLink to="/music" style={({ isActive }) => ({ borderBottom: isActive ? '2px solid var(--primary-gold)' : 'none', color: 'white', textDecoration: 'none' })}>MÚSICA</NavLink>
         <NavLink to="/video" style={({ isActive }) => ({ borderBottom: isActive ? '2px solid var(--primary-gold)' : 'none', color: 'white', textDecoration: 'none' })}>VÍDEO</NavLink>
       </nav>
-
-      <main style={{ paddingBottom: musicaAtual ? '140px' : '0px' }}>
+{/* style={{ paddingBottom: musicaAtual ? '140px' : '0px' }}> */}
+      <main>
         <Routes>
-          <Route path="/" element={<Music {...musicaProps} />} />
-          <Route path="/music" element={<Music {...musicaProps} />} />
+          <Route path="/" element={<Music/>} />
+          <Route path="/music" element={<Music/>} />
           <Route path="/video" element={
             <Video
               videos={videos}
               onAdd={(f, l) => adicionarMedia(f, l, 'video')}
-              onSelect={(v) => { audioRef.current?.pause(); setVideoAtual(v); }}
+              onSelect={(v) => { setVideoAtual(v); }}
               onRemove={async (n) => {
                 if (videoAtual?.name === n) {
                   const idx = videos.findIndex(v => v.name === n);
@@ -208,110 +145,7 @@ function App() {
         </Routes>
       </main>
 
-      {musicaAtual && (
-        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '10px', zIndex: 9999 }}>
-          <div style={{ //Essa div existe apenas para manter os botoes de suffle e repeat alinhados a esquerda
-            display: 'flex',
-            marginBottom: '5px',
-            opacity: 0.8,
-            width: '95%',
-            maxWidth: '700px',
-            justifyContent: 'flex-start'
-          }}>
-            <div className='glass-card' style={{ display: 'flex', flexDirection: 'row', gap: '20px', marginLeft: '0px', padding: '5px' }}>
-              <button onClick={() => setRepetir(!repetir)} className='' style={{ width: '30px', height: '30px' }}>
-                {IconComponent("repeat", repetir ? 'var(--primary-gold)' : '#888', '18px', '18px')}
-              </button>
-              <button className='playerButton' style={{ width: '30px', height: '30px' }}>
-                {IconComponent("suffle", 'var(--primary-gold)', '18px', '18px')}
-              </button>
-            </div>
-          </div>
-          <div className='glass-card' style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '15px', width: '95%', maxWidth: '700px' }}>
-
-
-            {/* Div Central (Playback Controls) */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginTop: '5px' }}>
-              <button className='playerButton' onClick={() => navegarMusica(-1)}>
-                {IconComponent("previous", 'var(--primary-gold)', null, null)}
-              </button>
-              <button className='playerButton' onClick={() => audioRef.current!.currentTime -= 10}>
-                {IconComponent("backwards", 'var(--primary-gold)', null, null)}
-              </button>
-              <button className='button-play' onClick={() => audioRef.current?.paused ? audioRef.current?.play() : audioRef.current?.pause()}>
-                {IconComponent(isPlaying ? "pause" : "play", 'var(--primary-gold)', '48px', '48px')}
-              </button>
-              <button className='playerButton' onClick={() => audioRef.current!.currentTime += 10}>
-                {IconComponent("forwards", 'var(--primary-gold)', null, null)}
-              </button>
-              <button className='playerButton' onClick={() => navegarMusica(1)}>
-                {IconComponent("next", 'var(--primary-gold)', null, null)}
-              </button>
-            </div>
-
-            <div style={{
-              width: '100%',
-              maxWidth: '500px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              color: 'var(--primary-gold)',
-              fontSize: '12px'
-            }}>
-              {/* Tempo Atual Formatado */}
-              <span>{formatarTempo(tempoAtual)}</span>
-
-              <input
-                type="range"
-                min="0"
-                max={audioRef.current?.duration || 0}
-                value={tempoAtual}
-                onChange={(e) => {
-                  const novoTempo = parseFloat(e.target.value);
-                  audioRef.current!.currentTime = novoTempo;
-                  setTempoAtual(novoTempo);
-                }}
-                style={{ flex: 1, accentColor: 'var(--primary-gold)', cursor: 'pointer' }}
-              />
-
-              {/* Tempo Total Formatado */}
-              <span>{formatarTempo(audioRef.current?.duration || 0)}</span>
-            </div>
-
-            <audio
-              ref={audioRef}
-              src={musicaAtual.url}
-              onEnded={lidarComFimDaMusica}
-              onPlay={() => setIsPlaying(true)}
-              onPause={() => setIsPlaying(false)}
-              onTimeUpdate={() => setTempoAtual(audioRef.current?.currentTime || 0)}
-              onLoadedMetadata={() => {
-                const tempo = localStorage.getItem('ultimo_progresso_tempo');
-                if (tempo && localStorage.getItem('ultima_musica_nome') === musicaAtual.name && audioRef.current) {
-                  audioRef.current.currentTime = parseFloat(tempo);
-                }
-              }}
-              style={{ width: '100%', maxWidth: '500px', height: '30px' }}
-            />
-
-            {/* Marquee Info */}
-            <div style={{
-              fontSize: '10px',
-              color: 'var(--primary-main)',
-              fontWeight: 'bold',
-              textAlign: 'center',
-              width: '100%',
-              maxWidth: '500px',
-
-            }}>
-              <div className="marquee">
-                <p className="marquee_text">{musicaAtual.name}</p>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      )}
+      
 
     </BrowserRouter>
   )
