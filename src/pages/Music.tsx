@@ -21,7 +21,7 @@ import { buscarTodosDoDB, deletarDoDB, salvarNoDB } from '../db'
 import Spinner from '../components/spinner/spinner'
 
 
-// Componente separado para cada item da lista — necessário para o useSortable
+
 interface ItemProps {
     musica: MediaFile
     ativa: boolean
@@ -137,10 +137,10 @@ function Music() {
         const s = Math.floor(segundos % 60);
 
         const partes = [
-            h > 0 ? h : null, // Só adiciona hora se houver
+            h > 0 ? h : null,
             m.toString().padStart(2, '0'),
             s.toString().padStart(2, '0')
-        ].filter(Boolean); // Remove o nulo da hora se não existir
+        ].filter(Boolean);
 
         return partes.join(':');
     };
@@ -173,11 +173,9 @@ function Music() {
             }
             const params = new URLSearchParams(window.location.search);
             if (params.get('refresh') === 'true') {
-                // Se acabou de chegar um arquivo, pega o último da lista e dá play!
                 const ultima = mTemp[mTemp.length - 1];
                 if (ultima) setMusicaAtual(ultima);
-
-                // Limpa a URL para não ficar dando refresh infinito
+                
                 window.history.replaceState({}, '', window.location.pathname);
             }
         };
@@ -254,18 +252,14 @@ function Music() {
         if (proxima) setMusicaAtual(proxima);
     };
 
-
-
-    // PointerSensor funciona para mouse e touch
-    // A distância mínima de 8px evita acionar drag em cliques normais
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: { distance: 8 }
         }),
         useSensor(TouchSensor, {
             activationConstraint: {
-                delay: 250,      // mobile: segura 250ms antes de ativar
-                tolerance: 5     // tolerância de 5px de movimento durante o delay
+                delay: 250,
+                tolerance: 5 
             }
         })
     )
@@ -292,14 +286,12 @@ function Music() {
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event
 
-        // Se soltou no mesmo lugar, não faz nada
+        
         if (!over || active.id === over.id) return
 
         const oldIndex = musicas.findIndex(m => m.name === active.id)
         const newIndex = musicas.findIndex(m => m.name === over.id)
 
-        // arrayMove reorganiza o array mantendo todos os itens
-        // O estado do áudio no App.tsx não é tocado — só a ordem muda
         setMusicas(arrayMove(musicas, oldIndex, newIndex))
     }
 
@@ -375,13 +367,12 @@ function Music() {
             )}
 
             {!isLoadingMusics && musicas.length > 0 && (
-                // DndContext — contexto que gerencia todo o drag and drop
                 <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
                     onDragEnd={handleDragEnd}
                 >
-                    {/* SortableContext — lista os ids dos itens ordenáveis */}
+                    
                     <SortableContext
                         items={musicas.map(m => m.name)}
                         strategy={verticalListSortingStrategy}
@@ -441,9 +432,7 @@ function Music() {
                         </div>
                     </div>
                     <div className='glass-card' style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '15px', width: '95%', maxWidth: '700px' }}>
-
-
-                        {/* Div Central (Playback Controls) */}
+                        
                         <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginTop: '5px' }}>
                             <button className='playerButton' onClick={() => navegarMusica(-1)}>
                                 {IconComponent("previous", 'var(--primary-gold)', null, null)}
@@ -471,10 +460,8 @@ function Music() {
                             color: 'var(--primary-gold)',
                             fontSize: '12px',
                             marginTop: '10px'
-                        }}>
-                            {/* Tempo Atual Formatado */}
+                        }}>                            
                             <span>{formatarTempo(tempoAtual)}</span>
-
                             <input
                                 type="range"
                                 min="0"
@@ -487,8 +474,6 @@ function Music() {
                                 }}
                                 style={{ flex: 1, accentColor: 'var(--primary-gold)', cursor: 'pointer' }}
                             />
-
-                            {/* Tempo Total Formatado */}
                             <span>{formatarTempo(audioRef.current?.duration || 0)}</span>
                         </div>
 
@@ -507,8 +492,6 @@ function Music() {
                             }}
                             style={{ width: '100%', maxWidth: '500px', height: '30px' }}
                         />
-
-                        {/* Marquee Info */}
                         <div style={{
                             fontSize: '10px',
                             color: 'var(--primary-main)',

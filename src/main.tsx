@@ -2,7 +2,6 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.scss'
 import App from './App.tsx'
-import * as serviceWorkerRegistration from './serviceWorkerRegistration.ts'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -11,8 +10,7 @@ createRoot(document.getElementById('root')!).render(
 )
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js');
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js');
+  });
 }
-
-// Registra o Service Worker para o PWA funcionar offline
-serviceWorkerRegistration.register();
