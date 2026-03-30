@@ -1,17 +1,7 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import type { MediaFile } from '../App'
 import IconComponent from '../components/icons'
-
-interface VideoProps {
-    videos: MediaFile[]
-    // Ajustei o onAdd para aceitar arquivos e suas respectivas thumbnails
-    onAdd: (itens: { file: File, thumb: string }[], limpar: boolean) => void
-    onSelect: (v: MediaFile) => void
-    onRemove: (name: string) => void
-    onEnded: () => void
-    videoAtivo: MediaFile | null;
-    onClearAll: () => void;
-}
+import { buscarTodosDoDB, deletarDoDB, salvarNoDB } from '../db'
 
 // Função auxiliar para capturar um frame do vídeo
 const gerarThumbnail = (file: File): Promise<string> => {
@@ -26,7 +16,7 @@ const gerarThumbnail = (file: File): Promise<string> => {
         video.currentTime = 1; // Pula o primeiro segundo para evitar tela preta
 
         video.onloadeddata = () => {
-            canvas.width = 320; 
+            canvas.width = 320;
             canvas.height = 180;
             const ctx = canvas.getContext('2d');
             ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -41,8 +31,10 @@ const gerarThumbnail = (file: File): Promise<string> => {
     });
 };
 
-function Video({ videos, onAdd, onSelect, onRemove, onEnded, videoAtivo, onClearAll }: VideoProps) {
-    const videoRef = useRef<HTMLVideoElement>(null)
+function Video() {
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const [videos, setVideos] = useState<MediaFile[]>([]);
+    const [videoAtual, setVideoAtual] = useState<MediaFile | null>(null);
 
     const handleInput = (limpar: boolean, isDirectory: boolean) => {
         const input = document.createElement('input');
@@ -56,24 +48,92 @@ function Video({ videos, onAdd, onSelect, onRemove, onEnded, videoAtivo, onClear
             const f = (e.target as HTMLInputElement).files;
             if (f) {
                 const soVideo = Array.from(f).filter(file => file.type.startsWith('video/'));
-                
+
                 // Gera as thumbnails antes de adicionar
                 const novosVideos = await Promise.all(soVideo.map(async (file) => {
                     const thumb = await gerarThumbnail(file);
                     return { file, thumb };
                 }));
 
-                if (novosVideos.length > 0) onAdd(novosVideos, limpar);
+                if (novosVideos.length > 0) adicionarVideo(novosVideos, limpar);
             }
         };
         input.click();
     }
 
     useEffect(() => {
-        if (videoAtivo && videoRef.current) {
+        const carregar = async () => {
+            const dados = await buscarTodosDoDB();
+            const vTemp: MediaFile[] = [];
+
+            dados.forEach(item => {
+                if (!item.blob.type.includes('audio')) {
+                    vTemp.push({
+                        name: item.name,
+                        url: URL.createObjectURL(item.blob),
+                        type: 'video',
+                        thumbnail: item.thumbnail // <--- ESSA LINHA É A QUE ESTÁ FALTANDO!
+                    });
+                }
+            });
+            setVideos(vTemp);
+        };
+        carregar();
+    }, []);
+
+    useEffect(() => {
+        if (videoAtual && videoRef.current) {
             videoRef.current.play().catch(e => console.log("Autoplay bloqueado", e));
         }
-    }, [videoAtivo])
+    }, [videoAtual]);
+
+    const adicionarVideo = async (novosItens: { file: File, thumb: string }[], limpar: boolean) => {
+        if (limpar) {
+            const todos = await buscarTodosDoDB();
+            for (const item of todos) {
+                if (!item.blob.type.includes('audio')) await deletarDoDB(item.name);
+            }
+            setVideos([]);
+            setVideoAtual(null);
+        }
+
+        const novosFormatados: MediaFile[] = [];
+
+        for (const item of novosItens) {
+            // Salva no IndexedDB: nome, o arquivo (blob) e a string da thumbnail
+            await salvarNoDB(item.file.name, item.file, item.thumb);
+
+            novosFormatados.push({
+                name: item.file.name,
+                url: URL.createObjectURL(item.file),
+                type: 'video',
+                thumbnail: item.thumb
+            });
+        }
+
+        setVideos(prev => limpar ? novosFormatados : [...prev, ...novosFormatados]);
+    };
+
+    const onRemove = async (name: string) => {
+        await deletarDoDB(name);
+        setVideos(p => p.filter(x => x.name !== name));
+        if (videoAtual?.name === name) setVideoAtual(null);
+    }
+
+    const onEnded = () => {
+                const idx = videos.findIndex(v => v.name === videoAtual?.name);
+                if (idx < videos.length - 1) setVideoAtual(videos[idx + 1]);
+              }
+
+              const onClearAll = async () => {
+                if (!window.confirm("Excluir todos os vídeos?")) return;
+                const todos = await buscarTodosDoDB();
+                for (const item of todos) {
+                  if (!item.blob.type.includes('audio')) await deletarDoDB(item.name);
+                }
+                setVideos([]);
+                setVideoAtual(null);
+              }
 
     return (
         <div style={{ maxWidth: '800px', margin: '0 auto', paddingBottom: '100px' }}>
@@ -105,15 +165,15 @@ function Video({ videos, onAdd, onSelect, onRemove, onEnded, videoAtivo, onClear
             </nav>
 
             {/* Player de vídeo */}
-            {videoAtivo && (
+            {videoAtual && (
                 <div style={{ background: '#000', borderRadius: '8px', overflow: 'hidden', marginBottom: '20px', marginTop: '20px' }}>
-                    <video ref={videoRef} src={videoAtivo.url} controls onEnded={onEnded} style={{ width: '100%', maxHeight: '450px' }} />
+                    <video ref={videoRef} src={videoAtual.url} controls onEnded={onEnded} style={{ width: '100%', maxHeight: '450px' }} />
                 </div>
             )}
 
             <div className="marquee">
-                                <p className="marquee_text">{videoAtivo?.name}</p>
-                            </div>
+                <p className="marquee_text">{videoAtual?.name}</p>
+            </div>
 
             {/* Lista de Vídeos */}
             {videos.length === 0 ? (
@@ -131,18 +191,18 @@ function Video({ videos, onAdd, onSelect, onRemove, onEnded, videoAtivo, onClear
                     <p>Selecione seus arquivos de vídeo para começar.</p>
                 </div>
             ) : (
-                <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', 
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
                     gap: '15px',
                     marginTop: '80px'
                 }}>
                     {videos.map((v) => (
                         <div className='glass-card'
                             key={v.name}
-                            onClick={() => onSelect(v)}
+                            onClick={() => setVideoAtual(v)}
                             style={{
-                                border: videoAtivo?.name === v.name ? '2px solid var(--primary-gold)' : '1px solid #222',
+                                border: videoAtual?.name === v.name ? '2px solid var(--primary-gold)' : '1px solid #222',
                                 padding: '8px',
                                 borderRadius: '8px',
                                 cursor: 'pointer',
@@ -171,7 +231,7 @@ function Video({ videos, onAdd, onSelect, onRemove, onEnded, videoAtivo, onClear
                                 alignItems: 'center',
                                 justifyContent: 'space-between',
                                 gap: '8px',
-                                color: videoAtivo?.name === v.name ? 'var(--primary-gold)' : 'var(--text-main)',
+                                color: videoAtual?.name === v.name ? 'var(--primary-gold)' : 'var(--text-main)',
                             }}>
                                 <span style={{
                                     fontSize: '12px',
