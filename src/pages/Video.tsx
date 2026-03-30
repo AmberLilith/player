@@ -1,17 +1,45 @@
 import { useRef, useEffect } from 'react'
 import type { MediaFile } from '../App'
 import IconComponent from '../components/icons'
-import './video.scss'
 
 interface VideoProps {
     videos: MediaFile[]
-    onAdd: (files: File[], limpar: boolean) => void
+    // Ajustei o onAdd para aceitar arquivos e suas respectivas thumbnails
+    onAdd: (itens: { file: File, thumb: string }[], limpar: boolean) => void
     onSelect: (v: MediaFile) => void
     onRemove: (name: string) => void
     onEnded: () => void
     videoAtivo: MediaFile | null;
     onClearAll: () => void;
 }
+
+// Função auxiliar para capturar um frame do vídeo
+const gerarThumbnail = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+        const video = document.createElement('video');
+        const canvas = document.createElement('canvas');
+        const url = URL.createObjectURL(file);
+
+        video.style.display = 'none';
+        video.src = url;
+        video.muted = true;
+        video.currentTime = 1; // Pula o primeiro segundo para evitar tela preta
+
+        video.onloadeddata = () => {
+            canvas.width = 320; 
+            canvas.height = 180;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            URL.revokeObjectURL(url);
+            resolve(dataUrl);
+        };
+        video.onerror = () => {
+            URL.revokeObjectURL(url);
+            resolve('');
+        };
+    });
+};
 
 function Video({ videos, onAdd, onSelect, onRemove, onEnded, videoAtivo, onClearAll }: VideoProps) {
     const videoRef = useRef<HTMLVideoElement>(null)
@@ -23,11 +51,19 @@ function Video({ videos, onAdd, onSelect, onRemove, onEnded, videoAtivo, onClear
         (input as any).webkitdirectory = isDirectory;
         (input as any).directory = isDirectory;
         input.accept = 'video/*';
-        input.onchange = (e) => {
+
+        input.onchange = async (e) => {
             const f = (e.target as HTMLInputElement).files;
             if (f) {
-                const soVideo = Array.from(f).filter(file => file.type.startsWith('video/'))
-                if (soVideo.length > 0) onAdd(soVideo, limpar)
+                const soVideo = Array.from(f).filter(file => file.type.startsWith('video/'));
+                
+                // Gera as thumbnails antes de adicionar
+                const novosVideos = await Promise.all(soVideo.map(async (file) => {
+                    const thumb = await gerarThumbnail(file);
+                    return { file, thumb };
+                }));
+
+                if (novosVideos.length > 0) onAdd(novosVideos, limpar);
             }
         };
         input.click();
@@ -35,60 +71,51 @@ function Video({ videos, onAdd, onSelect, onRemove, onEnded, videoAtivo, onClear
 
     useEffect(() => {
         if (videoAtivo && videoRef.current) {
-            videoRef.current.play();
+            videoRef.current.play().catch(e => console.log("Autoplay bloqueado", e));
         }
     }, [videoAtivo])
 
     return (
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', paddingBottom: '100px' }}>
             <nav style={{
                 position: 'fixed',
-                top: '50px', // <--- EXATAMENTE a altura do nav pai
+                top: '50px',
                 left: 0,
                 width: '100%',
                 display: 'flex',
                 justifyContent: 'flex-end',
-                textAlign: 'center',
-                background: 'transparent', // Fundo sólido para não ver as músicas passando por trás
-                zIndex: 9999, // Um pouco menor que o pai para não dar conflito
+                background: 'transparent',
+                zIndex: 9999,
                 padding: '10px 0',
-                border: 'none',
-                boxShadow: 'none'
+                pointerEvents: 'none'
             }}>
-
-                <div className='glass-card' style={{ display: 'flex', gap: '10px', marginBottom: '20px', justifyContent: 'center', marginRight: '10px' }}>
-                    <button
-                        onClick={() => handleInput(true, true)}
-                        style={{}}
-                    >
+                <div className='glass-card' style={{ display: 'flex', gap: '10px', marginBottom: '20px', justifyContent: 'center', marginRight: '10px', pointerEvents: 'auto' }}>
+                    <button onClick={() => handleInput(true, true)}>
                         {IconComponent("add_playlist", 'var(--primary-gold)', null, null)}
                     </button>
-                    <button
-                        onClick={() => handleInput(false, false)}
-                        style={{}}
-                    >
+                    <button onClick={() => handleInput(false, false)}>
                         {IconComponent("add_video", 'var(--primary-gold)', null, null)}
                     </button>
                     {videos.length > 0 && (
-                        <button
-                            onClick={onClearAll}
-                            style={{}}
-                        >
+                        <button onClick={onClearAll}>
                             {IconComponent("remove_playlist", 'var(--primary-gold)', null, null)}
                         </button>
                     )}
                 </div>
             </nav>
 
-
-            {/* Player de vídeo (só aparece se houver um selecionado) */}
+            {/* Player de vídeo */}
             {videoAtivo && (
-                <div style={{ background: '#000', borderRadius: '8px', overflow: 'hidden', marginBottom: '20px', marginTop: '120px'  }}>
+                <div style={{ background: '#000', borderRadius: '8px', overflow: 'hidden', marginBottom: '20px', marginTop: '20px' }}>
                     <video ref={videoRef} src={videoAtivo.url} controls onEnded={onEnded} style={{ width: '100%', maxHeight: '450px' }} />
                 </div>
             )}
 
-            {/* Estado Vazio ou Lista de Vídeos */}
+            <div className="marquee">
+                                <p className="marquee_text">{videoAtivo?.name}</p>
+                            </div>
+
+            {/* Lista de Vídeos */}
             {videos.length === 0 ? (
                 <div style={{
                     maxWidth: '500px',
@@ -104,59 +131,69 @@ function Video({ videos, onAdd, onSelect, onRemove, onEnded, videoAtivo, onClear
                     <p>Selecione seus arquivos de vídeo para começar.</p>
                 </div>
             ) : (
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', 
                     gap: '15px',
-                    margin: '140px auto 0 auto',
+                    marginTop: '80px'
                 }}>
                     {videos.map((v) => (
-                        <div
+                        <div className='glass-card'
                             key={v.name}
                             onClick={() => onSelect(v)}
                             style={{
                                 border: videoAtivo?.name === v.name ? '2px solid var(--primary-gold)' : '1px solid #222',
-                                padding: '10px',
-                                borderRadius: '5px',
-                                background: 'var(--bg-card)',
-                                cursor: 'pointer'
+                                padding: '8px',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                transition: 'transform 0.2s'
                             }}
                         >
+                            {/* Container da Thumbnail */}
+                            <div style={{
+                                width: '100%',
+                                aspectRatio: '16/9',
+                                borderRadius: '4px',
+                                marginBottom: '8px',
+                                overflow: 'hidden',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                backgroundImage: v.thumbnail ? `url(${v.thumbnail})` : 'none',
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center'
+                            }}>
+                                {!v.thumbnail && <span style={{ fontSize: '24px' }}>🎬</span>}
+                            </div>
+
                             <div style={{
                                 display: 'flex',
-                                flexDirection: 'row',
-                                alignItems: 'center', // Alinha verticalmente o nome e o X
+                                alignItems: 'center',
                                 justifyContent: 'space-between',
+                                gap: '8px',
                                 color: videoAtivo?.name === v.name ? 'var(--primary-gold)' : 'var(--text-main)',
-
                             }}>
-                                <span
-                                    style={{
-                                        whiteSpace: 'nowrap',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        flex: 1, // Faz o span ocupar o espaço disponível e respeitar o ellipsis
-                                        minWidth: 0
-                                    }}>
-                                    🎬 {v.name}
+                                <span style={{
+                                    fontSize: '12px',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    flex: 1,
+                                    minWidth: 0
+                                }}>
+                                    {v.name}
                                 </span>
-
                                 <span
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         onRemove(v.name);
                                     }}
                                     className='close'
-                                    style={{
-                                        flexShrink: 0, // Garante que o X nunca seja esmagado
-                                        fontSize: '14px',
-                                        padding: '2px 5px'
-                                    }}
+                                    style={{ flexShrink: 0, fontSize: '14px', padding: '0 4px' }}
                                 >
                                     ✕
                                 </span>
                             </div>
-
                         </div>
                     ))}
                 </div>
