@@ -2,8 +2,8 @@ import { useRef, useEffect, useState } from 'react'
 import type { MediaFile } from '../App'
 import IconComponent from '../components/icons'
 import { buscarTodosDoDB, deletarDoDB, salvarNoDB } from '../db'
+import Spinner from '../components/spinner/spinner';
 
-// Função auxiliar para capturar um frame do vídeo
 const gerarThumbnail = (file: File): Promise<string> => {
     return new Promise((resolve) => {
         const video = document.createElement('video');
@@ -13,7 +13,7 @@ const gerarThumbnail = (file: File): Promise<string> => {
         video.style.display = 'none';
         video.src = url;
         video.muted = true;
-        video.currentTime = 1; // Pula o primeiro segundo para evitar tela preta
+        video.currentTime = 1;
 
         video.onloadeddata = () => {
             canvas.width = 320;
@@ -35,8 +35,10 @@ function Video() {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [videos, setVideos] = useState<MediaFile[]>([]);
     const [videoAtual, setVideoAtual] = useState<MediaFile | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleInput = (limpar: boolean, isDirectory: boolean) => {
+        setIsLoading(true);
         const input = document.createElement('input');
         input.type = 'file';
         input.multiple = true;
@@ -44,12 +46,13 @@ function Video() {
         (input as any).directory = isDirectory;
         input.accept = 'video/*';
 
+        input.oncancel = () => setIsLoading(false); 
+
         input.onchange = async (e) => {
             const f = (e.target as HTMLInputElement).files;
             if (f) {
                 const soVideo = Array.from(f).filter(file => file.type.startsWith('video/'));
 
-                // Gera as thumbnails antes de adicionar
                 const novosVideos = await Promise.all(soVideo.map(async (file) => {
                     const thumb = await gerarThumbnail(file);
                     return { file, thumb };
@@ -72,7 +75,7 @@ function Video() {
                         name: item.name,
                         url: URL.createObjectURL(item.blob),
                         type: 'video',
-                        thumbnail: item.thumbnail // <--- ESSA LINHA É A QUE ESTÁ FALTANDO!
+                        thumbnail: item.thumbnail
                     });
                 }
             });
@@ -100,7 +103,6 @@ function Video() {
         const novosFormatados: MediaFile[] = [];
 
         for (const item of novosItens) {
-            // Salva no IndexedDB: nome, o arquivo (blob) e a string da thumbnail
             await salvarNoDB(item.file.name, item.file, item.thumb);
 
             novosFormatados.push({
@@ -112,6 +114,7 @@ function Video() {
         }
 
         setVideos(prev => limpar ? novosFormatados : [...prev, ...novosFormatados]);
+        setIsLoading(false);
     };
 
     const onRemove = async (name: string) => {
@@ -163,8 +166,6 @@ function Video() {
                     )}
                 </div>
             </nav>
-
-            {/* Player de vídeo */}
             {videoAtual && (
                 <div style={{ background: '#000', borderRadius: '8px', overflow: 'hidden', marginBottom: '20px', marginTop: '20px' }}>
                     <video ref={videoRef} src={videoAtual.url} controls onEnded={onEnded} style={{ width: '100%', maxHeight: '450px' }} />
@@ -176,7 +177,7 @@ function Video() {
             </div>
 
             {/* Lista de Vídeos */}
-            {videos.length === 0 ? (
+            {!isLoading && videos.length === 0 && (
                 <div style={{
                     maxWidth: '500px',
                     margin: '100px auto 0 auto',
@@ -190,7 +191,9 @@ function Video() {
                     <h2 style={{ color: 'var(--primary-gold)' }}>Nenhum vídeo encontrado</h2>
                     <p>Selecione seus arquivos de vídeo para começar.</p>
                 </div>
-            ) : (
+            )}
+            
+            {!isLoading && videos.length > 0 && (
                 <div style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
@@ -256,6 +259,22 @@ function Video() {
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {isLoading && (
+                 <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    margin: '200px auto 0 auto',
+                    padding: '40px',
+                    textAlign: 'center',
+                    borderRadius: '12px',
+                    color: 'white'
+                }}>
+                    <Spinner />
+                    <h2 style={{ color: 'var(--primary-gold)', marginTop: '20px' }}>Carregando vídeos...</h2>  
                 </div>
             )}
         </div>

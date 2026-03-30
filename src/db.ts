@@ -15,17 +15,15 @@ export const initDB = (): Promise<IDBDatabase> => {
   });
 };
 
-// No seu db.ts (ou onde estiver a lógica do IndexedDB)
 export const salvarNoDB = async (name: string, blob: Blob, thumbnail?: string) => {
   const db = await initDB(); 
   const tx = db.transaction('media', 'readwrite');
-  const store = tx.objectStore('media');
+  const store = tx.objectStore('media');  
   
-  // Aqui salvamos o objeto completo
   await store.put({ 
     name, 
     blob, 
-    thumbnail // <--- O banco precisa gravar isso
+    thumbnail
   });
 };
 

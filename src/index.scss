@@ -10,9 +10,7 @@
 html,
 body {
   -webkit-user-select: none;
-  /* Safari */
   -ms-user-select: none;
-  /* IE 10+ */
   user-select: none;
   /* Padrão (Chrome, Firefox, etc.) */
   /* Impede o menu de contexto ao segurar o toque (comum no iOS/Android) */
@@ -27,18 +25,11 @@ body {
   -webkit-font-smoothing: antialiased;
   background-image: url('/body-bg.png');
   background-size: cover; 
-
-  /* 3. Evita que a imagem se repita (mosaico) */
   background-repeat: no-repeat; 
-
-  /* 4. Centraliza a imagem (para não cortar o lado errado) */
   background-position: center center; 
-
-  /* Opcional: Mantém o fundo fixo enquanto o conteúdo rola */
   background-attachment: fixed; 
 }
 
-/* Scrollbar Customizada */
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -57,7 +48,6 @@ body {
 }
 
 
-/* Botões Estilizados */
 button {
   transition: all 0.3s ease;
   font-weight: 600;
@@ -78,7 +68,6 @@ button:hover {
   box-shadow: 0 0 15px var(--primary-gold);
 }
 
-/* Estilo dos Cards de Mídia */
 li,
 .video-card {
   border: 1px solid #222 !important;
@@ -90,13 +79,11 @@ li:hover {
   border-color: var(--accent-blue) !important;
 }
 
-/* Destaque para o que está tocando */
 .active-item {
   border-left: 4px solid var(--primary-gold) !important;
   background: linear-gradient(90deg, #1a1a1d, #161618) !important;
 }
 
-/* Player Fixo no Rodapé */
 .player-bar {
   background: rgba(22, 22, 24, 0.95) !important;
   backdrop-filter: blur(10px);
@@ -104,7 +91,6 @@ li:hover {
   box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.8);
 }
 
-/* No seu arquivo index.css, adicione ou atualize: */
 
 h1 {
   color: var(--primary-gold);
@@ -121,7 +107,6 @@ main {
   min-height: 100vh;
 }
 
-/* Garante visibilidade dos nomes de arquivos longos */
 span {
   white-space: nowrap;
   overflow: hidden;
@@ -131,13 +116,11 @@ span {
 
 ul {
   max-width: 600px;
-  /* Largura máxima confortável */
   margin: 0 auto;
-  /* Centraliza a lista na tela */
   padding: 20px;
 }
 
-/* Garante que inputs e textareas ainda permitam digitação/seleção */
+
 input,
 textarea {
   -webkit-user-select: text;
@@ -148,17 +131,15 @@ textarea {
 
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.08); // Aumentei levemente de 0.05 para 0.08
-  
-  // O segredo para o Mobile (iOS/Safari)
+  background: rgba(255, 255, 255, 0.08);  
+ 
   -webkit-backdrop-filter: blur(15px); 
   backdrop-filter: blur(15px); 
 
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 15px;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);  
   
-  // Previne artefatos visuais no mobile durante o scroll
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
 }
@@ -229,27 +210,26 @@ textarea {
 
 }
 
-/* 1. O "Trilho" (a linha onde a bolinha corre) */
 input[type="range"] {
-  -webkit-appearance: none; /* Remove o estilo padrão do browser */
+  -webkit-appearance: none;
   background: transparent;
   cursor: pointer;
 }
 
 /* Chrome, Safari, Edge e Opera */
 input[type="range"]::-webkit-slider-runnable-track {
-  background: rgba(255, 255, 255, 0.1); /* Cor do fundo da barra */
-  height: 4px; /* <--- AQUI você controla a grossura da linha! */
+  background: rgba(255, 255, 255, 0.1);
+  height: 4px;
   border-radius: 2px;
 }
 
-/* 2. A "Bolinha" (Thumb) */
+/*A "Bolinha" (Thumb) */
 input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none; /* Importante para o Chrome */
+  -webkit-appearance: none;
   appearance: none;
-  margin-top: -6px; /* (Track height / 2) - (Thumb height / 2) para centralizar */
+  margin-top: -6px;
   background-color: var(--primary-gold);
-  height: 16px; /* Tamanho da bolinha */
+  height: 16px;
   width: 16px;
   border-radius: 50%;
 }

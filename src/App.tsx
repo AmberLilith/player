@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom'
-import { buscarTodosDoDB, deletarDoDB, salvarNoDB } from './db'
 import Music from './pages/Music'
 import Video from './pages/Video'
 import { useDialog } from './components/dialog/useDialog'
@@ -22,26 +21,26 @@ function App() {
 
 
 
-// Substitua o useEffect do beforeinstallprompt por este:
+
 useEffect(() => {
   const handler = (e: Event) => {
     e.preventDefault();
     setDeferredPrompt(e);
-    setShowInstallButton(true); // use o estado, não o dialog diretamente
+    setShowInstallButton(true);
   };
 
   window.addEventListener('beforeinstallprompt', handler);
   return () => window.removeEventListener('beforeinstallprompt', handler);
 }, []);
 
-// E adicione este efeito para reagir à mudança do estado:
+
 useEffect(() => {
   if (showInstallButton) {
     dialog.open();
   }
 }, [showInstallButton]);
 
-  // Função para chamar quando o usuário clicar no botão
+
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();

@@ -9,7 +9,6 @@ interface DialogProps {
 }
 
 function Dialog({ isOpen, onClose, title, children, width = '400px' }: DialogProps) {
-  // Fecha com ESC
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -21,7 +20,6 @@ function Dialog({ isOpen, onClose, title, children, width = '400px' }: DialogPro
   if (!isOpen) return null;
 
   return (
-    // Backdrop
     <div
       onClick={onClose}
       style={{
@@ -33,9 +31,8 @@ function Dialog({ isOpen, onClose, title, children, width = '400px' }: DialogPro
         animation: 'fadeIn 0.2s ease'
       }}
     >
-      {/* Painel */}
       <div 
-        onClick={e => e.stopPropagation()} // evita fechar ao clicar no conteúdo
+        onClick={e => e.stopPropagation()}
         style={{
           background: 'var(--bg-card)',
           border: '1px solid rgba(255,255,255,0.1)',
@@ -46,7 +43,6 @@ function Dialog({ isOpen, onClose, title, children, width = '400px' }: DialogPro
           animation: 'slideUp 0.25s ease'
         }}
       >
-        {/* Header */}
         {title && (
           <div style={{
             padding: '20px 24px 0',
@@ -65,7 +61,6 @@ function Dialog({ isOpen, onClose, title, children, width = '400px' }: DialogPro
           </div>
         )}
 
-        {/* Conteúdo */}
         <div style={{ padding: '20px 24px 24px' }}>
           {children}
         </div>
