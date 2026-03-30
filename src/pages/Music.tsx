@@ -18,6 +18,7 @@ import type { MediaFile } from '../App'
 import IconComponent from '../components/icons'
 import { useEffect, useRef, useState } from 'react'
 import { buscarTodosDoDB, deletarDoDB, salvarNoDB } from '../db'
+import Spinner from '../components/spinner/spinner'
 
 
 // Componente separado para cada item da lista — necessário para o useSortable
@@ -128,6 +129,7 @@ function Music() {
     const isRestoring = useRef(false);
     const [isPlaying, setIsPlaying] = useState(false)
     const [tempoAtual, setTempoAtual] = useState(0);
+    const [isLoadingMusics, setIsLoadingMusics] = useState(false);
 
     const formatarTempo = (segundos: number) => {
         const h = Math.floor(segundos / 3600);
@@ -202,7 +204,7 @@ function Music() {
         }
     }, [musicaAtual]);
 
-    const adicionarMedia = async (files: File[], limparAnterior: boolean, tipo: 'audio') => {
+    const adicionarMedia = async (files: File[], limparAnterior: boolean, tipo: 'audio') => {        
         if (limparAnterior) {
             const todos = await buscarTodosDoDB();
             for (const item of todos) {
@@ -223,7 +225,8 @@ function Music() {
                 type: 'audio'
             });
         }
-        setMusicas(p => limparAnterior ? novasTemp : [...p, ...novasTemp])
+        setMusicas(p => limparAnterior ? novasTemp : [...p, ...novasTemp]);
+        setIsLoadingMusics(false);
     };
 
     const excluirTudo = async (tipo: 'audio') => {
@@ -268,12 +271,14 @@ function Music() {
     )
 
     const handleInput = (limpar: boolean, isDirectory: boolean) => {
+        setIsLoadingMusics(true);
         const input = document.createElement('input')
         input.type = 'file'
         input.multiple = true
             ; (input as any).webkitdirectory = isDirectory
             ; (input as any).directory = isDirectory
         input.accept = 'audio/*'
+        input.oncancel = () => setIsLoadingMusics(false);
         input.onchange = (e) => {
             const f = (e.target as HTMLInputElement).files
             if (f) {
@@ -353,7 +358,7 @@ function Music() {
             </div>
 
 
-            {musicas.length === 0 ? (
+            {!isLoadingMusics && musicas.length === 0 && (
                 <div className='glass-card' style={{
                     maxWidth: '500px',
                     margin: '200px auto 0 auto',
@@ -367,7 +372,9 @@ function Music() {
                     <p>Clique em <strong>Abrir Nova Playlist</strong> para carregar suas músicas.</p>
                     <p style={{ fontSize: '12px' }}>A playlist carregada é armazenada apenas no seu navegador.</p>
                 </div>
-            ) : (
+            )}
+
+            {!isLoadingMusics && musicas.length > 0 && (
                 // DndContext — contexto que gerencia todo o drag and drop
                 <DndContext
                     sensors={sensors}
@@ -396,6 +403,22 @@ function Music() {
                         </ul>
                     </SortableContext>
                 </DndContext>
+            )}
+
+            {isLoadingMusics && (
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    margin: '200px auto 0 auto',
+                    padding: '40px',
+                    textAlign: 'center',
+                    borderRadius: '12px',
+                    color: 'white'
+                }}>
+                    <Spinner />
+                    <h2 style={{ color: 'var(--primary-gold)', marginTop: '20px' }}>Carregando músicas...</h2>  
+                </div>
             )}
 
             {musicaAtual && (
