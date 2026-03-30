@@ -8,116 +8,133 @@ export interface MediaFile {
   name: string
   url: string
   type: 'audio' | 'video'
+  thumbnail?: string
 }
 
 function App() {
   const [videos, setVideos] = useState<MediaFile[]>([])
   const [videoAtual, setVideoAtual] = useState<MediaFile | null>(null)
 
+useEffect(() => {
+  const carregar = async () => {
+    const dados = await buscarTodosDoDB();
+    const vTemp: MediaFile[] = [];
 
-  useEffect(() => {
-    const carregar = async () => {
-      const dados = await buscarTodosDoDB();
-      const vTemp: MediaFile[] = [];
-
-      dados.forEach(item => {
-        const file: MediaFile = {
+    dados.forEach(item => {
+      if (!item.blob.type.includes('audio')) {
+        vTemp.push({
           name: item.name,
           url: URL.createObjectURL(item.blob),
-          type: item.blob.type.includes('audio') ? 'audio' : 'video'
-        };
-        vTemp.push(file);
-      });
-      setVideos(vTemp);
-    };
-    carregar();
-  }, []);
-
-  useEffect(() => {
-    // Service Workers ou a própria rota podem interceptar isso
-    const handleShare = async () => {
-      const url = new URL(window.location.href);
-      if (url.pathname === '/share-target') {
-        // Aqui entra a lógica para pegar o blob do 'media' 
-        // e usar sua função adicionarMedia()
+          type: 'video',
+          thumbnail: item.thumbnail // <--- ESSA LINHA É A QUE ESTÁ FALTANDO!
+        });
       }
-    };
-    handleShare();
-  }, []);
+    });
+    setVideos(vTemp);
+  };
+  carregar();
+}, []);
 
-
-
-  const adicionarMedia = async (files: File[], limparAnterior: boolean, tipo: 'audio' | 'video') => {
-    if (limparAnterior) {
+  const adicionarVideo = async (novosItens: { file: File, thumb: string }[], limpar: boolean) => {
+    if (limpar) {
       const todos = await buscarTodosDoDB();
       for (const item of todos) {
-        const ehAudio = item.blob.type.includes('audio');
-        if ((tipo === 'audio' && ehAudio) || (tipo === 'video' && !ehAudio)) {
-          await deletarDoDB(item.name);
-        }
+        if (!item.blob.type.includes('audio')) await deletarDoDB(item.name);
       }
-      (setVideos([]), setVideoAtual(null));
+      setVideos([]);
+      setVideoAtual(null);
     }
 
-    const novasTemp: MediaFile[] = [];
-    for (const file of files) {
-      await salvarNoDB(file.name, file);
-      novasTemp.push({
-        name: file.name,
-        url: URL.createObjectURL(file),
-        type: file.type.includes('audio') ? 'audio' : 'video'
+    const novosFormatados: MediaFile[] = [];
+
+    for (const item of novosItens) {
+      // Salva no IndexedDB: nome, o arquivo (blob) e a string da thumbnail
+      await salvarNoDB(item.file.name, item.file, item.thumb);
+      
+      novosFormatados.push({
+        name: item.file.name,
+        url: URL.createObjectURL(item.file),
+        type: 'video',
+        thumbnail: item.thumb
       });
     }
 
-    setVideos(p => limparAnterior ? novasTemp : [...p, ...novasTemp]);
+    setVideos(prev => limpar ? novosFormatados : [...prev, ...novosFormatados]);
   };
-
-  const excluirTudo = async (tipo: 'audio' | 'video') => {
-    if (!window.confirm(`Excluir todos os ${tipo === 'audio' ? 'áudios' : 'vídeos'}?`)) return;
-    const todos = await buscarTodosDoDB();
-    for (const item of todos) {
-      const ehAudio = item.blob.type.includes('audio');
-      if ((tipo === 'audio' && ehAudio) || (tipo === 'video' && !ehAudio)) await deletarDoDB(item.name);
-    }
-    (setVideos([]), setVideoAtual(null));
-  };
-
 
   return (
     <BrowserRouter>
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, height: '50px', padding: '0 15px', background: '#1a1a1a', display: 'flex', alignItems: 'center', gap: '20px', zIndex: 10000 }}>
-        <NavLink to="/music" style={({ isActive }) => ({ borderBottom: isActive ? '2px solid var(--primary-gold)' : 'none', color: 'white', textDecoration: 'none' })}>MÚSICA</NavLink>
-        <NavLink to="/video" style={({ isActive }) => ({ borderBottom: isActive ? '2px solid var(--primary-gold)' : 'none', color: 'white', textDecoration: 'none' })}>VÍDEO</NavLink>
+      <nav style={{ 
+        position: 'fixed', 
+        top: 0, 
+        left: 0, 
+        right: 0, 
+        height: '50px', 
+        padding: '0 15px', 
+        background: '#1a1a1a', 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '20px', 
+        zIndex: 10000 
+      }}>
+        <NavLink 
+          to="/music" 
+          style={({ isActive }) => ({ 
+            borderBottom: isActive ? '2px solid var(--primary-gold)' : 'none', 
+            color: 'white', 
+            textDecoration: 'none',
+            fontSize: '14px',
+            fontWeight: 'bold'
+          })}
+        >
+          MÚSICA
+        </NavLink>
+        <NavLink 
+          to="/video" 
+          style={({ isActive }) => ({ 
+            borderBottom: isActive ? '2px solid var(--primary-gold)' : 'none', 
+            color: 'white', 
+            textDecoration: 'none',
+            fontSize: '14px',
+            fontWeight: 'bold'
+          })}
+        >
+          VÍDEO
+        </NavLink>
       </nav>
 
-      <main>
+      <main style={{ paddingTop: '50px' }}>
         <Routes>
-          <Route path="/" element={<Music/>} />
-          <Route path="/music" element={<Music/>} />
+          <Route path="/" element={<Music />} />
+          <Route path="/music" element={<Music />} />
           <Route path="/video" element={
             <Video
               videos={videos}
-              onAdd={(f, l) => adicionarMedia(f, l, 'video')}
-              onSelect={(v) => { setVideoAtual(v); }}
+              onAdd={adicionarVideo}
+              onSelect={(v) => setVideoAtual(v)}
               onRemove={async (n) => {
-                if (videoAtual?.name === n) {
-                  const idx = videos.findIndex(v => v.name === n);
-                  setVideoAtual(videos[idx + 1] || videos[0] || null);
-                }
                 await deletarDoDB(n);
                 setVideos(p => p.filter(x => x.name !== n));
+                if (videoAtual?.name === n) setVideoAtual(null);
               }}
               videoAtivo={videoAtual}
               onEnded={() => {
                 const idx = videos.findIndex(v => v.name === videoAtual?.name);
                 if (idx < videos.length - 1) setVideoAtual(videos[idx + 1]);
               }}
-              onClearAll={() => excluirTudo('video')}
+              onClearAll={async () => {
+                if (!window.confirm("Excluir todos os vídeos?")) return;
+                const todos = await buscarTodosDoDB();
+                for (const item of todos) {
+                  if (!item.blob.type.includes('audio')) await deletarDoDB(item.name);
+                }
+                setVideos([]);
+                setVideoAtual(null);
+              }}
             />
           } />
         </Routes>
       </main>
-
     </BrowserRouter>
   )
 }

@@ -149,12 +149,14 @@ function Music() {
             const mTemp: MediaFile[] = [];
 
             dados.forEach(item => {
-                const file: MediaFile = {
-                    name: item.name,
-                    url: URL.createObjectURL(item.blob),
-                    type: 'audio'
-                };
-                mTemp.push(file);
+                if (item.blob.type.includes('audio')) {
+                    const file: MediaFile = {
+                        name: item.name,
+                        url: URL.createObjectURL(item.blob),
+                        type: 'audio'
+                    };
+                    mTemp.push(file);
+                }
             });
 
             setMusicas(mTemp);
@@ -296,6 +298,17 @@ function Music() {
         setMusicas(arrayMove(musicas, oldIndex, newIndex))
     }
 
+    const embaralharMusicas = () => {
+        setMusicas(prev => {
+            const copia = [...prev];
+            for (let i = copia.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copia[i], copia[j]] = [copia[j], copia[i]];
+            }
+            return copia;
+        });
+    };
+
     return (
         <div >
             <div style={{
@@ -317,12 +330,7 @@ function Music() {
                         >
                             {IconComponent("add_playlist", 'var(--primary-gold)', null, null)}
                         </button>
-                        <button
-                            onClick={() => handleInput(false, false)}
-                            style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
-                        >
-                            {IconComponent("add_music", 'var(--primary-gold)', null, null)}
-                        </button>
+
                         {musicas.length > 0 && (
                             <button
                                 onClick={() => excluirTudo('audio')}
@@ -331,6 +339,15 @@ function Music() {
                                 {IconComponent("remove_playlist", 'var(--primary-gold)', null, null)}
                             </button>
                         )}
+
+
+                        <button
+                            onClick={() => handleInput(false, false)}
+                            style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
+                        >
+                            {IconComponent("add_music", 'var(--primary-gold)', null, null)}
+                        </button>
+
                     </div>
                 </nav>
             </div>
@@ -343,7 +360,7 @@ function Music() {
                     padding: '40px',
                     textAlign: 'center',
                     borderRadius: '12px',
-                    color: 'white'                    
+                    color: 'white'
                 }}>
                     <span style={{ fontSize: '48px', display: 'block', marginBottom: '10px' }}>🎧</span>
                     <h2 style={{ color: 'var(--primary-gold)' }}>Sua biblioteca está vazia</h2>
@@ -362,7 +379,7 @@ function Music() {
                         items={musicas.map(m => m.name)}
                         strategy={verticalListSortingStrategy}
                     >
-                        <ul style={{ listStyle: 'none', padding: 0, marginTop: '120px',paddingBottom: musicaAtual ? '140px' : '0px', overflow: 'hidden',zIndex: 9999}}>
+                        <ul style={{ listStyle: 'none', padding: 0, marginTop: '120px', paddingBottom: musicaAtual ? '140px' : '0px', overflow: 'hidden', zIndex: 9999 }}>
                             {musicas.map((m) => (
                                 <MusicItem
                                     key={m.name}
@@ -395,7 +412,7 @@ function Music() {
                             <button onClick={() => setRepetir(!repetir)} className='' style={{ width: '30px', height: '30px' }}>
                                 {IconComponent("repeat", repetir ? 'var(--primary-gold)' : '#888', '18px', '18px')}
                             </button>
-                            <button className='playerButton' style={{ width: '30px', height: '30px' }}>
+                            <button className='playerButton' style={{ width: '30px', height: '30px' }} onClick={embaralharMusicas}>
                                 {IconComponent("suffle", 'var(--primary-gold)', '18px', '18px')}
                             </button>
                         </div>
