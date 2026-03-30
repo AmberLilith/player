@@ -1,5 +1,11 @@
-const CACHE_NAME = 'player-v1';
-const urlsToCache = ['/', '/index.html', '/manifest.json'];
+const CACHE_NAME = 'player-v2';
+const urlsToCache = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/assets/index-BuH8UAAr.js', 
+  '/assets/index-y4iYIl_9.css', 
+];
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -9,13 +15,17 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('activate', event => {
-  event.waitUntil(self.clients.claim());
+  // Limpa caches antigos
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
+  );
 });
 
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // Share target
   if (event.request.method === 'POST' && url.pathname === '/share-target') {
     event.respondWith((async () => {
       return Response.redirect('/music?refresh=true', 303);
@@ -23,12 +33,10 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Cache offline
   event.respondWith(
     caches.match(event.request).then(response => {
       return response || fetch(event.request).then(networkResponse => {
-        // Cacheia dinamicamente os assets do Vite
-        if (event.request.destination === 'script' || 
+        if (event.request.destination === 'script' ||
             event.request.destination === 'style' ||
             event.request.destination === 'image') {
           caches.open(CACHE_NAME).then(cache => {
@@ -37,6 +45,6 @@ self.addEventListener('fetch', event => {
         }
         return networkResponse;
       });
-    }).catch(() => caches.match('/index.html')) // fallback
+    }).catch(() => caches.match('/index.html'))
   );
 });
