@@ -19,9 +19,6 @@ function App() {
   const [showInstallButton, setShowInstallButton] = useState(false);
   const dialog = useDialog();
 
-
-
-
 useEffect(() => {
   const handler = (e: Event) => {
     e.preventDefault();
@@ -31,6 +28,20 @@ useEffect(() => {
 
   window.addEventListener('beforeinstallprompt', handler);
   return () => window.removeEventListener('beforeinstallprompt', handler);
+}, []);
+
+
+//Bloquear F5
+useEffect(() => {
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'F5' || ((e.ctrlKey || e.metaKey) && e.key === 'r')) {
+      e.preventDefault();
+      console.warn("F5 Bloqueado");
+    }
+  };
+
+  window.addEventListener('keydown', handleKeyDown);
+  return () => window.removeEventListener('keydown', handleKeyDown);
 }, []);
 
 
