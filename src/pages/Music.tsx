@@ -14,11 +14,11 @@ import {
     verticalListSortingStrategy
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { useEffect, useRef, useState } from 'react'
 import type { MediaFile } from '../App'
 import IconComponent from '../components/icons'
-import { useEffect, useRef, useState } from 'react'
-import { buscarTodosDoDB, deletarDoDB, salvarNoDB } from '../db'
 import Spinner from '../components/spinner/spinner'
+import { buscarTodosDoDB, deletarDoDB, salvarNoDB } from '../db'
 
 
 
@@ -125,7 +125,8 @@ function Music() {
     const [musicas, setMusicas] = useState<MediaFile[]>([]);
     const [musicaAtual, setMusicaAtual] = useState<MediaFile | null>(null);
     const audioRef = useRef<HTMLAudioElement>(null);
-    const [repetir, setRepetir] = useState(false);
+    const [repetirTudo, setRepetirTudo] = useState(false);
+    const [repetirAtual, setRepetirAtual] = useState(false);
     const isRestoring = useRef(false);
     const [isPlaying, setIsPlaying] = useState(false)
     const [tempoAtual, setTempoAtual] = useState(0);
@@ -175,7 +176,7 @@ function Music() {
             if (params.get('refresh') === 'true') {
                 const ultima = mTemp[mTemp.length - 1];
                 if (ultima) setMusicaAtual(ultima);
-                
+
                 window.history.replaceState({}, '', window.location.pathname);
             }
         };
@@ -193,16 +194,17 @@ function Music() {
     }, [musicaAtual]);
 
     useEffect(() => {
-        if (audioRef.current && musicaAtual) {
-            if (isRestoring.current) {
-                isRestoring.current = false;
-                return;
-            }
-            audioRef.current.play();
+    if (audioRef.current && musicaAtual) {
+        if (isRestoring.current) {
+            isRestoring.current = false;
+            return;
         }
-    }, [musicaAtual]);
+        // Garante que o play seja chamado sempre que a música mudar
+        audioRef.current.play().catch(err => console.error("Erro ao tocar:", err));
+    }
+}, [musicaAtual]);
 
-    const adicionarMedia = async (files: File[], limparAnterior: boolean, tipo: 'audio') => {        
+    const adicionarMedia = async (files: File[], limparAnterior: boolean, tipo: 'audio') => {
         if (limparAnterior) {
             const todos = await buscarTodosDoDB();
             for (const item of todos) {
@@ -245,12 +247,27 @@ function Music() {
     };
 
     const lidarComFimDaMusica = () => {
-        const indexAtual = musicas.findIndex(m => m.name === musicaAtual?.name);
-        const ehUltima = indexAtual === musicas.length - 1;
-        let proxima = (!ehUltima) ? musicas[indexAtual + 1] : (repetir ? musicas[0] : null);
+    const indexAtual = musicas.findIndex(m => m.name === musicaAtual?.name);
+    const ehUltima = indexAtual === musicas.length - 1;
 
-        if (proxima) setMusicaAtual(proxima);
-    };
+    if (repetirAtual && audioRef.current) {
+        // Se for para repetir a mesma, apenas voltamos o tempo para zero e damos play
+        audioRef.current.currentTime = 0;
+        audioRef.current.play();
+        return; // Saímos da função aqui
+    }
+
+    // Lógica para as próximas músicas
+    let proxima = !ehUltima 
+        ? musicas[indexAtual + 1] 
+        : (repetirTudo ? musicas[0] : null);
+
+    if (proxima) {
+        setMusicaAtual(proxima);
+    } else {
+        setIsPlaying(false);
+    }
+};
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -259,7 +276,7 @@ function Music() {
         useSensor(TouchSensor, {
             activationConstraint: {
                 delay: 250,
-                tolerance: 5 
+                tolerance: 5
             }
         })
     )
@@ -286,7 +303,7 @@ function Music() {
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event
 
-        
+
         if (!over || active.id === over.id) return
 
         const oldIndex = musicas.findIndex(m => m.name === active.id)
@@ -372,7 +389,7 @@ function Music() {
                     collisionDetection={closestCenter}
                     onDragEnd={handleDragEnd}
                 >
-                    
+
                     <SortableContext
                         items={musicas.map(m => m.name)}
                         strategy={verticalListSortingStrategy}
@@ -408,7 +425,7 @@ function Music() {
                     color: 'white'
                 }}>
                     <Spinner />
-                    <h2 style={{ color: 'var(--primary-gold)', marginTop: '20px' }}>Carregando músicas...</h2>  
+                    <h2 style={{ color: 'var(--primary-gold)', marginTop: '20px' }}>Carregando músicas...</h2>
                 </div>
             )}
 
@@ -423,8 +440,26 @@ function Music() {
                         justifyContent: 'flex-start'
                     }}>
                         <div className='glass-card' style={{ display: 'flex', flexDirection: 'row', gap: '20px', marginLeft: '0px', padding: '5px' }}>
-                            <button onClick={() => setRepetir(!repetir)} className='' style={{ width: '30px', height: '30px' }}>
-                                {IconComponent("repeat", repetir ? 'var(--primary-gold)' : '#888', '18px', '18px')}
+                            <button
+                                onClick={() => {
+                                    if (repetirTudo) {
+                                        setRepetirTudo(false);
+                                        setRepetirAtual(true);
+                                    } else if (repetirAtual) {
+                                        setRepetirAtual(false);
+                                    } else {
+                                        setRepetirTudo(true);
+                                    }
+                                }}
+                                className=''
+                                style={{ width: '30px', height: '30px' }}
+                            >
+                                {IconComponent(
+                                    repetirTudo ? "repeatAll" : "repeat_one",
+                                    (repetirTudo || repetirAtual) ? 'var(--primary-gold)' : '#888',
+                                    '18px',
+                                    '18px'
+                                )}
                             </button>
                             <button className='playerButton' style={{ width: '30px', height: '30px' }} onClick={embaralharMusicas}>
                                 {IconComponent("suffle", 'var(--primary-gold)', '18px', '18px')}
@@ -432,7 +467,7 @@ function Music() {
                         </div>
                     </div>
                     <div className='glass-card' style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '15px', width: '95%', maxWidth: '700px' }}>
-                        
+
                         <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginTop: '5px' }}>
                             <button className='playerButton' onClick={() => navegarMusica(-1)}>
                                 {IconComponent("previous", 'var(--primary-gold)', null, null)}
@@ -460,7 +495,7 @@ function Music() {
                             color: 'var(--primary-gold)',
                             fontSize: '12px',
                             marginTop: '10px'
-                        }}>                            
+                        }}>
                             <span>{formatarTempo(tempoAtual)}</span>
                             <input
                                 type="range"
