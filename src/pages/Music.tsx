@@ -147,6 +147,18 @@ function Music() {
     };
 
     useEffect(() => {
+        if ('mediaSession' in navigator && musicaAtual) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: musicaAtual.name,
+            });
+            navigator.mediaSession.setActionHandler('play', () => audioRef.current?.play());
+            navigator.mediaSession.setActionHandler('pause', () => audioRef.current?.pause());
+            navigator.mediaSession.setActionHandler('nexttrack', () => navegarMusica(1));
+            navigator.mediaSession.setActionHandler('previoustrack', () => navegarMusica(-1));
+        }
+    }, [musicaAtual]);
+
+    useEffect(() => {
         const carregar = async () => {
             const dados = await buscarTodosDoDB();
             const mTemp: MediaFile[] = [];
@@ -194,15 +206,15 @@ function Music() {
     }, [musicaAtual]);
 
     useEffect(() => {
-    if (audioRef.current && musicaAtual) {
-        if (isRestoring.current) {
-            isRestoring.current = false;
-            return;
+        if (audioRef.current && musicaAtual) {
+            if (isRestoring.current) {
+                isRestoring.current = false;
+                return;
+            }
+            // Garante que o play seja chamado sempre que a música mudar
+            audioRef.current.play().catch(err => console.error("Erro ao tocar:", err));
         }
-        // Garante que o play seja chamado sempre que a música mudar
-        audioRef.current.play().catch(err => console.error("Erro ao tocar:", err));
-    }
-}, [musicaAtual]);
+    }, [musicaAtual]);
 
     const adicionarMedia = async (files: File[], limparAnterior: boolean, tipo: 'audio') => {
         if (limparAnterior) {
@@ -247,27 +259,27 @@ function Music() {
     };
 
     const lidarComFimDaMusica = () => {
-    const indexAtual = musicas.findIndex(m => m.name === musicaAtual?.name);
-    const ehUltima = indexAtual === musicas.length - 1;
+        const indexAtual = musicas.findIndex(m => m.name === musicaAtual?.name);
+        const ehUltima = indexAtual === musicas.length - 1;
 
-    if (repetirAtual && audioRef.current) {
-        // Se for para repetir a mesma, apenas voltamos o tempo para zero e damos play
-        audioRef.current.currentTime = 0;
-        audioRef.current.play();
-        return; // Saímos da função aqui
-    }
+        if (repetirAtual && audioRef.current) {
+            // Se for para repetir a mesma, apenas voltamos o tempo para zero e damos play
+            audioRef.current.currentTime = 0;
+            audioRef.current.play();
+            return; // Saímos da função aqui
+        }
 
-    // Lógica para as próximas músicas
-    let proxima = !ehUltima 
-        ? musicas[indexAtual + 1] 
-        : (repetirTudo ? musicas[0] : null);
+        // Lógica para as próximas músicas
+        let proxima = !ehUltima
+            ? musicas[indexAtual + 1]
+            : (repetirTudo ? musicas[0] : null);
 
-    if (proxima) {
-        setMusicaAtual(proxima);
-    } else {
-        setIsPlaying(false);
-    }
-};
+        if (proxima) {
+            setMusicaAtual(proxima);
+        } else {
+            setIsPlaying(false);
+        }
+    };
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
