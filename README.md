@@ -94,12 +94,6 @@ Em outros fabricantes (Xiaomi/MIUI, Huawei, OnePlus, etc.) o caminho é parecido
 
 > Essa configuração é por aparelho — se reinstalar o app ou trocar de celular, pode ser necessário repetir esses passos.
 
-Quer que eu já aplique essa edição direto no README.md do clone que tenho aqui, ou prefere colar você mesmo?
-
-
-
-
-Claude é uma IA e pode cometer erros. Por favor, verifique as respostas.
 
 
 
