@@ -79,7 +79,21 @@ Diferente de players comuns que usam apenas URLs temporárias, este projeto util
 
 Isso permite que, ao fechar e abrir o navegador, o aplicativo recupere os arquivos do disco local instantaneamente, simulando o comportamento de um software desktop tradicional.
 
-Dica para o seu GitHub:
-Se quiser deixar o repositório ainda mais "matador", tire um print do player rodando (com o tema Dark e as músicas listadas) e coloque uma seção de "Screenshots" no começo do README.
-  
+## 🔋 Reprodução em segundo plano (Android)
+
+Se você instalar o app no Android (via "Adicionar à tela inicial") e a música pausar sozinha depois de alguns minutos com a tela minimizada, isso geralmente não é um bug do app — é o gerenciador de bateria do sistema suspendendo o processo em segundo plano.
+
+Em aparelhos Samsung (One UI), isso acontece mesmo com o "Modo economia de bateria" desligado, porque existe uma lista separada de controle por app:
+
+1. Vá em **Configurações > Cuidados com o dispositivo e bateria > Bateria > Limites de uso em segundo plano**.
+2. Verifique se o **Player** está nas listas **Apps dormindo** ou **Apps em hibernação profunda** — se estiver, remova.
+3. Adicione o Player na lista **Apps nunca em espera**.
+4. Em **Configurações > Apps > Player > Bateria**, confirme que está como **Sem restrições**.
+
+Em outros fabricantes (Xiaomi/MIUI, Huawei, OnePlus, etc.) o caminho é parecido: procure por configurações de bateria específicas do app e marque como "sem restrições" ou "irrestrito".
+
+> Essa configuração é por aparelho — se reinstalar o app ou trocar de celular, pode ser necessário repetir esses passos.
+
+
+
 
