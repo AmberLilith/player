@@ -125,8 +125,8 @@ function Music() {
     const [musicas, setMusicas] = useState<MediaFile[]>([]);
     const [musicaAtual, setMusicaAtual] = useState<MediaFile | null>(null);
     const audioRef = useRef<HTMLAudioElement>(null);
-    const [repetirTudo, setRepetirTudo] = useState(false);
-    const [repetirAtual, setRepetirAtual] = useState(false);
+    const [repetirTudo, setRepetirTudo] = useState(() => localStorage.getItem('repetir_tudo') === 'true');
+    const [repetirAtual, setRepetirAtual] = useState(() => localStorage.getItem('repetir_atual') === 'true');
     const isRestoring = useRef(false);
     const [isPlaying, setIsPlaying] = useState(false)
     const [tempoAtual, setTempoAtual] = useState(0);
@@ -145,6 +145,11 @@ function Music() {
 
         return partes.join(':');
     };
+
+    useEffect(() => {
+    localStorage.setItem('repetir_tudo', repetirTudo.toString());
+    localStorage.setItem('repetir_atual', repetirAtual.toString());
+}, [repetirTudo, repetirAtual]);
 
     useEffect(() => {
         if ('mediaSession' in navigator && musicaAtual) {
